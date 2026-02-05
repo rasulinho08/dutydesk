@@ -1,33 +1,42 @@
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideIn {
-  from { 
+  from {
     opacity: 0;
     transform: translateY(20px);
   }
-  to { 
+
+  to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
 @keyframes modalIn {
-  from { 
+  from {
     opacity: 0;
     transform: scale(0.9) translateY(-20px);
   }
-  to { 
+
+  to {
     opacity: 1;
     transform: scale(1) translateY(0);
   }
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .animate-fade-in {
@@ -258,9 +267,17 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
-.history-card:nth-child(1) { border-left-color: #1e5a8a; }
-.history-card:nth-child(2) { border-left-color: #22c55e; }
-.history-card:nth-child(3) { border-left-color: #a855f7; }
+.history-card:nth-child(1) {
+  border-left-color: #1e5a8a;
+}
+
+.history-card:nth-child(2) {
+  border-left-color: #22c55e;
+}
+
+.history-card:nth-child(3) {
+  border-left-color: #a855f7;
+}
 
 .card-header {
   display: flex;
@@ -277,9 +294,20 @@
   font-weight: 500;
 }
 
-.team-badge.apm { background: #dbeafe; color: #1e5a8a; }
-.team-badge.noc { background: #dcfce7; color: #16a34a; }
-.team-badge.soc { background: #f3e8ff; color: #7c3aed; }
+.team-badge.apm {
+  background: #dbeafe;
+  color: #1e5a8a;
+}
+
+.team-badge.noc {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.team-badge.soc {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
 
 .date-info {
   font-size: 14px;
@@ -306,16 +334,19 @@
   margin-bottom: 12px;
 }
 
-.status-preview, .incidents-preview {
+.status-preview,
+.incidents-preview {
   margin-bottom: 8px;
 }
 
-.status-preview strong, .incidents-preview strong {
+.status-preview strong,
+.incidents-preview strong {
   font-size: 13px;
   color: #374151;
 }
 
-.status-preview p, .incidents-preview p {
+.status-preview p,
+.incidents-preview p {
   font-size: 13px;
   color: #6b7280;
   margin-top: 4px;
@@ -509,11 +540,11 @@
     flex-direction: column;
     gap: 16px;
   }
-  
+
   .filters-row {
     flex-wrap: wrap;
   }
-  
+
   .search-box {
     max-width: 100%;
   }

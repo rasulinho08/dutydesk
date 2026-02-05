@@ -4,9 +4,22 @@
   box-sizing: border-box;
 }
 
+:root {
+  --base-color-blue: #0B7EB0;
+  --base-color-dark-blue: #1790C3;
+  --base-color-darkest-blue: #1380AF;
+  --base-color-stat-card-blue: #108BC0;
+  --base-color-stat-card-green: #10B981;
+  --base-color-stat-card-red: #F97178;
+  --base-color-stat-card-purple: #B57CDD;
+  --bg-linear-gradient: linear-gradient(180deg, #108BC0 0%, #056F9C 100%);
+  --font-arial: 'Arial', sans-serif;
+}
+
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background-color: #f0f4f8;
+  /* font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; */
+  font-family: var(--font-arial);
+  background-color: #2c3845;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -34,13 +47,15 @@ button {
   font-family: inherit;
 }
 
-input, textarea, select {
+input,
+textarea,
+select {
   outline: none;
   border: none;
   font-family: inherit;
 }
 
-::-webkit-scrollbar {
+/* ::-webkit-scrollbar {
   width: 6px;
 }
 
@@ -55,4 +70,4 @@ input, textarea, select {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #a1a1a1;
-}
+} */

@@ -1,28 +1,35 @@
-import { Bell } from 'lucide-react'
-import './Header.css'
+// Header.jsx
+import { Bell } from 'lucide-react';
+import logo from '../assets/logo.png'; // Make sure this path points to your actual DutyDesk logo
+import './Header.css';
 
 function Header() {
   return (
     <header className="header">
       <div className="header-logo">
-        <span className="logo-text">DutyDesk</span>
+        <img 
+          src={logo} 
+          alt="DutyDesk Logo" 
+          className="logo-img" 
+        />
       </div>
 
       <div className="header-actions">
-        <button className="notification-btn">
-          <Bell size={22} />
+        <button className="notification-btn" aria-label="Notifications">
+          <Bell size={20} />
         </button>
+        
         <div className="flag-icon">
-          <img 
-            src="https://flagcdn.com/w40/az.png" 
-            alt="Azerbaijan Flag" 
+          <img
+            src="https://flagcdn.com/w40/az.png"
+            alt="Azerbaijan Flag"
             width="28"
             height="20"
           />
         </div>
       </div>
     </header>
-  )
+  );
 }
 
-export default Header
+export default Header;

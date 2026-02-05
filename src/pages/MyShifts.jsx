@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { 
-  Clock, MapPin, Info, X, Check, Calendar, FileText, 
+import {
+  Clock, MapPin, Info, X, Check, Calendar, FileText,
   PlusCircle, ChevronRight, AlertTriangle, RefreshCw,
   User, Phone, Mail
 } from 'lucide-react'
@@ -19,6 +19,8 @@ function MyShifts() {
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
   const [toastType, setToastType] = useState('success')
+  const [timeLeft, setTimeLeft] = useState('2:30')
+
 
   const shifts = [
     {
@@ -122,7 +124,7 @@ function MyShifts() {
       </div>
 
       {/* Header Section */}
-      <div className="page-header animate-fade-in">
+      {/* <div className="page-header animate-fade-in">
         <div className="header-left">
           <span className="header-label">İndiki Növbə</span>
           <h1 className="header-time">08:00 - 16:00</h1>
@@ -138,19 +140,19 @@ function MyShifts() {
           <span className="status-text">Status</span>
           <span className="status-value">Aktiv</span>
         </div>
-      </div>
+      </div> */}
 
       {/* Shift Info Banner */}
-      <div className="shift-info-banner animate-fade-in" style={{ animationDelay: '0.1s' }}>
+      {/* <div className="shift-info-banner animate-fade-in" style={{ animationDelay: '0.1s' }}>
         <div className="info-dot pulse"></div>
         <div className="info-content">
           <span className="info-label">Növbə Məlumatı</span>
           <span className="info-text">14 Yanvar 2026, Çərşənbə • Gündüz növbəsi • 8 saat</span>
         </div>
-      </div>
+      </div> */}
 
       {/* Action Buttons */}
-      <div className="action-row animate-fade-in" style={{ animationDelay: '0.2s' }}>
+      {/* <div className="action-row animate-fade-in" style={{ animationDelay: '0.2s' }}>
         <button className="form-btn" onClick={handleGoToForm}>
           <FileText size={18} />
           <span>Təhvil-Təslim Formu</span>
@@ -159,6 +161,39 @@ function MyShifts() {
           <PlusCircle size={18} />
           <span>Qeyd Əlavə Et</span>
         </button>
+      </div> */}
+
+      {/* Current Shift Overview */}
+      <div className='shift-container'>
+        <div className="shift-header animate-fade-in">
+          <div className="shift-info">
+            <span className="shift-label">İndiki Növbə</span>
+            <h1 className="shift-time">08:00 - 16:00</h1>
+            <span className="shift-date">14 Yanvar 2026, Çərşənbə</span>
+          </div>
+
+          <div className="shift-status">
+            <div className="status-circle pulse">
+              <Clock size={28} />
+            </div>
+            <span className="status-label">Aktiv</span>
+            <span className="status-time">{timeLeft}h qalıb</span>
+          </div>
+        </div>
+        <div className="shift-stats">
+          <div className="stat-card-dashboard blue animate-slide-in" style={{ animationDelay: '0.1s' }}>
+            <span className="stat-value">8h</span>
+            <span className="stat-label-dashboard">Növbə müddəti</span>
+          </div>
+          <div className="stat-card-dashboard light animate-slide-in" style={{ animationDelay: '0.2s' }}>
+            <span className="stat-value">APM</span>
+            <span className="stat-label-dashboard">Komanda</span>
+          </div>
+          <div className="stat-card-dashboard white animate-slide-in" style={{ animationDelay: '0.3s' }}>
+            <span className="stat-value">Gündüz</span>
+            <span className="stat-label-dashboard">Növbə tipi</span>
+          </div>
+        </div>
       </div>
 
       {/* Shifts List */}
@@ -175,9 +210,9 @@ function MyShifts() {
 
         <div className="shifts-list">
           {shifts.map((shift, index) => (
-            <div 
-              key={shift.id} 
-              className="shift-card animate-slide-in"
+            <div
+              key={shift.id}
+              className="shift-card-my animate-slide-in"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               <div className="shift-card-header">

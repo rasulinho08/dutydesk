@@ -1,26 +1,55 @@
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes modalIn {
-  from { opacity: 0; transform: scale(0.9) translateY(-20px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.animate-fade-in { animation: fadeIn 0.5s ease forwards; }
-.animate-slide-in { animation: slideIn 0.5s ease forwards; }
-.animate-modal { animation: modalIn 0.3s ease forwards; }
+.animate-fade-in {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.5s ease forwards;
+}
+
+.animate-modal {
+  animation: modalIn 0.3s ease forwards;
+}
 
 .admin-schedule {
   width: 100%;
@@ -120,7 +149,7 @@
 }
 
 .team-btn.active {
-  background: #1e5a8a;
+  background: #108BC0;
   border-color: #1e5a8a;
   color: white;
 }
@@ -237,36 +266,71 @@
 }
 
 .shift-event.apm {
-  background: #dbeafe;
-  border-left: 3px solid #1e5a8a;
+  background: #DBEAFE;
+  border: 1px solid #8EC5FF;
 }
 
 .shift-event.noc {
-  background: #dcfce7;
-  border-left: 3px solid #22c55e;
+  background: #D0FAE5;
+  border: 1px solid #5EE9B5;
 }
 
 .shift-event.soc {
-  background: #f3e8ff;
-  border-left: 3px solid #a855f7;
+  background: #F3E8FF;
+  border: 1px solid #DAB2FF;
 }
 
 .shift-team {
   font-weight: 600;
   color: #374151;
+  border: 1px solid rgb(194, 194, 194);
+  background: rgb(241, 241, 241);
+  border-radius: 10px;
+  padding: 2px 6px;
+  font-size: 10px;
+  width: 40px;
 }
 
-.shift-time {
+.shift-time-schd {
   color: #6b7280;
+  gap: 4px;
+
+}
+
+.team-badge-pill-sc {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+  width: 50px;
+}
+
+.apm-pill {
+  background-color: #EBF8FF;
+  color: #3182CE;
+}
+
+.noc-pill {
+  background-color: #F0FFF4;
+  color: #38A169;
+}
+
+.soc-pill {
+  background-color: #FAF5FF;
+  color: #805AD5;
+}
+
+.shift-time-cont {
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-.shift-time::before {
+/* .shift-time::before {
   content: '⏱';
   font-size: 10px;
-}
+} */
 
 .shift-worker {
   color: #374151;
@@ -306,9 +370,17 @@
   border-radius: 4px;
 }
 
-.legend-color.apm { background: #dbeafe; }
-.legend-color.noc { background: #dcfce7; }
-.legend-color.soc { background: #f3e8ff; }
+.legend-color.apm {
+  background: #dbeafe;
+}
+
+.legend-color.noc {
+  background: #dcfce7;
+}
+
+.legend-color.soc {
+  background: #f3e8ff;
+}
 
 .legend-dot {
   width: 10px;
@@ -433,9 +505,20 @@
   font-weight: 500;
 }
 
-.team-badge.apm { background: #dbeafe; color: #1e5a8a; }
-.team-badge.noc { background: #dcfce7; color: #16a34a; }
-.team-badge.soc { background: #f3e8ff; color: #7c3aed; }
+.team-badge.apm {
+  background: #dbeafe;
+  color: #1e5a8a;
+}
+
+.team-badge.noc {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.team-badge.soc {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
 
 .modal-footer {
   display: flex;
@@ -504,7 +587,7 @@
   .calendar-day {
     min-height: 80px;
   }
-  
+
   .legend-items {
     flex-wrap: wrap;
     gap: 16px;
@@ -517,20 +600,20 @@
     gap: 16px;
     align-items: flex-start;
   }
-  
+
   .header-controls {
     flex-wrap: wrap;
   }
-  
+
   .calendar-day {
     min-height: 60px;
     padding: 4px;
   }
-  
+
   .day-number {
     font-size: 12px;
   }
-  
+
   .shift-event {
     padding: 4px;
     font-size: 10px;

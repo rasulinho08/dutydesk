@@ -6,97 +6,6 @@
   background-color: #f0f4f8;
 }
 
-/* Header */
-.layout-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 25px 32px;
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  animation: slideDown 0.4s ease forwards;
-}
-
-@keyframes slideDown {
-  from { transform: translateY(-100%); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-.header-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.logo-img {
-  height: 40px;
-  width: auto;
-  object-fit: contain;
-  transition: transform 0.3s ease;
-}
-
-.logo-img:hover {
-  transform: scale(1.1);
-}
-
-.logo-icon {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #1e5a8a 0%, #2d7ab8 100%);
-  color: white;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 18px;
-  transition: transform 0.3s ease;
-}
-
-.logo-icon:hover {
-  transform: rotate(10deg) scale(1.1);
-}
-
-.logo-text {
-  font-size: 22px;
-  font-weight: 700;
-  color: #1e5a8a;
-  letter-spacing: 0.5px;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.notification-btn {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f9fafb;
-  border: none;
-  border-radius: 10px;
-  color: #6b7280;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.notification-btn:hover {
-  background: #e3f2fd;
-  color: #1e5a8a;
-  transform: scale(1.05);
-}
-
-.flag-icon {
-  font-size: 24px;
-}
-
 /* Body */
 .layout-body {
   display: flex;
@@ -327,7 +236,7 @@
   opacity: 0.7;
 }
 
-.logout-btn {
+/* .logout-btn {
   width: 100%;
   display: flex;
   align-items: center;
@@ -360,7 +269,7 @@
 
 .logout-btn:hover svg {
   transform: translateX(-3px);
-}
+} */
 
 /* Main Content */
 .main-content {
@@ -386,11 +295,11 @@
     z-index: 99;
     transition: left 0.3s;
   }
-  
+
   .layout-sidebar.open {
     left: 0;
   }
-  
+
   .main-content {
     padding: 16px;
   }

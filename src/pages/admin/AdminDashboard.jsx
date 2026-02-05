@@ -137,7 +137,7 @@ function AdminDashboard() {
   }, [])
 
   const teams = [
-    { name: 'APM', members: 3, color: '#1e5a8a', currentShift: '09:00-17:00', worker: 'Leyla Məmmədova', onShift: 1 },
+    { name: 'APM', members: 3, color: '#1380AF', currentShift: '09:00-17:00', worker: 'Leyla Məmmədova', onShift: 1 },
     { name: 'NOC', members: 3, color: '#22c55e', currentShift: '09:00-17:00', worker: 'Rəşad İbrahimov', onShift: 1 },
     { name: 'SOC', members: 3, color: '#a855f7', currentShift: '09:00-17:00', worker: 'Günəl Həsənova', onShift: 1 }
   ]
@@ -306,359 +306,135 @@ function AdminDashboard() {
         <span>{toastMessage}</span>
       </div>
 
-      {/* Quick Stats Row */}
-      <div className="quick-stats-row animate-fade-in">
-        <div className="stat-card green">
-          <div className="stat-icon">
-            <UserCheck size={24} />
-          </div>
-          <div className="stat-info">
-            <span className="stat-value">{stats.totalOnDuty}</span>
-            <span className="stat-label">Hal-hazırda Növbədə</span>
-          </div>
-        </div>
-        <div className="stat-card blue">
-          <div className="stat-icon">
-            <Users size={24} />
-          </div>
-          <div className="stat-info">
-            <span className="stat-value">{stats.totalWorkers}</span>
-            <span className="stat-label">Ümumi İşçi</span>
-          </div>
-        </div>
-        <div className="stat-card orange">
-          <div className="stat-icon">
-            <FileText size={24} />
-          </div>
-          <div className="stat-info">
-            <span className="stat-value">{stats.pendingHandovers}</span>
-            <span className="stat-label">Gözləyən Handover</span>
-          </div>
-        </div>
-        <div className="stat-card red">
-          <div className="stat-icon">
-            <AlertCircle size={24} />
-          </div>
-          <div className="stat-info">
-            <span className="stat-value">{stats.emptyShifts}</span>
-            <span className="stat-label">Boş Növbə</span>
-          </div>
-        </div>
-        <div className="stat-card purple">
-          <div className="stat-icon">
-            <Calendar size={24} />
-          </div>
-          <div className="stat-info">
-            <span className="stat-value">{stats.todayShifts}</span>
-            <span className="stat-label">Bu gün Növbələr</span>
-          </div>
-        </div>
-        <div className="stat-card teal">
-          <div className="stat-icon">
-            <CheckCircle2 size={24} />
-          </div>
-          <div className="stat-info">
-            <span className="stat-value">{stats.completedHandovers}</span>
-            <span className="stat-label">Tamamlanmış Handover</span>
-          </div>
-        </div>
-      </div>
-
-      {/* On-Duty Now Section */}
-      <div className="on-duty-section animate-fade-in" style={{ animationDelay: '0.1s' }}>
-        <div className="section-header">
-          <div className="section-title">
-            <Activity size={20} className="pulse" />
-            <span>Hal-hazırda Növbədə</span>
-            <span className="live-badge">
-              <span className="live-dot"></span>
-              CANLI
-            </span>
-          </div>
-          <span className="current-time">
-            <Clock size={14} />
-            {currentTime.toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' })}
-          </span>
-        </div>
-        <div className="on-duty-grid">
-          {onDutyNow.map((duty, idx) => (
-            <div 
-              key={duty.id} 
-              className={`on-duty-card ${duty.status} hover-lift`}
-              style={{ animationDelay: `${idx * 0.1}s` }}
-              onClick={() => handleViewOnDuty(duty)}
-            >
-              <div className="duty-header">
-                <span className={`team-badge ${duty.team.toLowerCase()}`}>{duty.team}</span>
-                <span className={`status-indicator ${duty.status}`}>
-                  {duty.status === 'active' ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
-                  {duty.status === 'active' ? 'Aktiv' : 'Gecikmə'}
-                </span>
-              </div>
-              <div className="duty-worker">
-                <div className="worker-avatar">
-                  {duty.worker.split(' ').map(n => n[0]).join('')}
-                </div>
-                <div>
-                  <span className="worker-name">{duty.worker}</span>
-                  <span className="worker-shift">{duty.shift}</span>
-                </div>
-              </div>
-              <div className="duty-details">
-                <div className="detail-item">
-                  <LogIn size={14} />
-                  <span>Check-in: {duty.checkIn || '--:--'}</span>
-                </div>
-                <div className="detail-item">
-                  <FileText size={14} />
-                  <span>Handover: {
-                    duty.handoverStatus === 'completed' ? '✓ Tamamlanıb' :
-                    duty.handoverStatus === 'pending' ? '⏳ Gözləyir' : '✗ Yoxdur'
-                  }</span>
-                </div>
-              </div>
-              {duty.status === 'late' && (
-                <div className="late-warning">
-                  <AlertTriangle size={14} />
-                  <span>Check-in edilməyib!</span>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Alerts Section */}
-      <div className="alerts-section animate-fade-in" style={{ animationDelay: '0.2s' }}>
-        <div className="section-header">
-          <div className="section-title">
-            <AlertTriangle size={20} />
-            <span>Xəbərdarlıqlar və Problemlər</span>
-            <span className="count-badge high">{alerts.filter(a => a.severity === 'high').length} kritik</span>
-          </div>
-          <button className="btn-text" onClick={() => setAlerts([])}>
-            Hamısını sil
-          </button>
-        </div>
-        <div className="alerts-list">
-          {alerts.length === 0 ? (
-            <div className="empty-alerts">
-              <CheckCircle2 size={32} />
-              <span>Heç bir problem yoxdur!</span>
-            </div>
-          ) : (
-            alerts.map((alert, idx) => (
-              <div 
-                key={alert.id} 
-                className={`alert-card ${alert.severity} animate-slide-in`}
-                style={{ animationDelay: `${idx * 0.1}s` }}
-              >
-                <div className={`alert-icon ${alert.severity}`}>
-                  {getAlertIcon(alert.type)}
-                </div>
-                <div className="alert-content">
-                  <div className="alert-header">
-                    <span className={`team-badge ${alert.team.toLowerCase()}`}>{alert.team}</span>
-                    {alert.worker && <span className="alert-worker">{alert.worker}</span>}
-                    <span className="alert-time">{alert.time}</span>
-                  </div>
-                  <p className="alert-message">{alert.message}</p>
-                  <span className="alert-detail">{alert.detail}</span>
-                </div>
-                <div className="alert-actions">
-                  <button className="btn-action" onClick={() => handleAlertAction(alert)}>
-                    {getAlertActionText(alert.action)}
-                  </button>
-                  <button className="btn-dismiss-small" onClick={() => handleDismissAlert(alert.id)}>
-                    <X size={16} />
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* Header with notifications - moved after stats */}
-      <div className="dashboard-header animate-fade-in" style={{ animationDelay: '0.3s' }}>
-        <div className="notifications-section">
-          <div className="section-title">
-            <Bell size={20} />
-            <span>Bildirişlər</span>
-            <span className="count">({notifications.length})</span>
-          </div>
-          <div className="header-actions">
-            <button className="btn-primary" onClick={() => setShowAssignModal(true)}>
+      {/* Header Actions Row */}
+      <div className="dashboard-actions-row">
+        <h2>Komanda Statusu</h2>
+        <div className="header-buttons">
+          <button className="btn-primary" onClick={() => setShowAssignModal(true)}>
+            <div className="icon-circle">
               <UserPlus size={16} />
-              Növbə Təyin Et
-            </button>
-            <button className="btn-outline" onClick={handleExport}>
-              <Download size={16} />
-              Export
-            </button>
-          </div>
-        </div>
-
-        <div className="notifications-list">
-          {notifications.length === 0 ? (
-            <div className="empty-notifications">
-              <Check size={24} />
-              <span>Aktiv xəbərdarlıq yoxdur</span>
             </div>
-          ) : (
-            notifications.map((notif, idx) => (
-              <div 
-                key={notif.id} 
-                className="notification-card animate-slide-in"
-                style={{ animationDelay: `${idx * 0.1}s` }}
-              >
-                <div className="notif-content">
-                  <AlertTriangle size={18} className="warning-icon pulse" />
-                  <div>
-                    <p>{notif.message}</p>
-                    <span className="notif-team">Komanda: {notif.team}</span>
-                  </div>
-                </div>
-                <div className="notif-actions">
-                  <button className="btn-assign" onClick={() => handleAssign(notif)}>
-                    Təyin et
-                  </button>
-                  <button className="btn-dismiss" onClick={() => handleDismissNotification(notif.id)}>
-                    <X size={16} />
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
+            Növbə Təyin Et
+          </button>
+          <button className="btn-outline" onClick={handleExport}>
+            <Download size={16} />
+            Export
+          </button>
         </div>
       </div>
 
       {/* Team Status */}
-      <div className="team-status-section animate-fade-in" style={{ animationDelay: '0.2s' }}>
-        <h2>Komanda Statusu</h2>
+      <div className="team-status-section animate-fade-in">
         <div className="team-cards">
           {teams.map((team, idx) => (
             <div 
               key={team.name} 
-              className="team-card hover-lift"
+              className={`team-card ${team.name.toLowerCase()}-card hover-lift`}
               style={{ animationDelay: `${idx * 0.1}s` }}
             >
-              <div className="team-header">
-                <div className="team-icon" style={{ backgroundColor: team.color + '20', color: team.color }}>
-                  <Users size={20} />
+              <div className="card-header">
+                <div className={`team-icon-box ${team.name.toLowerCase()}-bg`}>
+                  <Users size={24} color="white" />
                 </div>
-                <div className="team-info">
+                <div className="team-title-box">
                   <h3>{team.name}</h3>
-                  <span>{team.members} İşçi</span>
+                  <span className="member-count">{team.members} İşçi</span>
                 </div>
-                <span className="on-shift-badge pulse-badge">{team.onShift} növbədə</span>
+                <span className="shift-badge">{team.onShift} növbədə</span>
               </div>
-              <div className="team-current">
-                <Clock size={14} />
-                <span>Cari Növbə</span>
+              
+              <div className="card-body">
+                <div className="current-shift-info">
+                  <div className="info-label">
+                    <Clock size={14} />
+                    <span>Cari Növbə</span>
+                  </div>
+                  <div className="shift-time-text">{team.currentShift}</div>
+                  <div className="shift-worker-name">{team.worker}</div>
+                </div>
               </div>
-              <div className="shift-time">{team.currentShift}</div>
-              <div className="shift-worker">{team.worker}</div>
-              <button className="team-detail-btn">
-                Ətraflı <ChevronRight size={14} />
-              </button>
             </div>
           ))}
         </div>
       </div>
 
       {/* 24 Hour Timeline */}
-      <div className="timeline-section animate-fade-in" style={{ animationDelay: '0.3s' }}>
+      <div className="timeline-section animate-fade-in" style={{ animationDelay: '0.2s' }}>
         <h2>24 Saatlıq Növbə Timeline</h2>
-        <div className="timeline-grid">
-          {timelineData.map((row, rowIdx) => (
-            <div key={row.team} className="timeline-row">
-              <span className="team-label" style={{ 
-                color: row.team === 'APM' ? '#1e5a8a' : row.team === 'NOC' ? '#22c55e' : '#a855f7' 
-              }}>
-                {row.team}
-              </span>
-              <div className="shifts-row">
+
+        {/* Re-implementing timeline using the previous data structure but new styling */}
+         <div className="timeline-grid-new">
+          {timelineData.map((row) => (
+            <div key={row.team} className="timeline-row-new">
+              <div className={`team-tag ${row.team.toLowerCase()}-tag`}>{row.team}</div>
+              <div className="shifts-track">
                 {row.shifts.map((shift, idx) => (
                   <div 
                     key={idx} 
-                    className={`shift-block ${shift.active ? 'active' : ''} hover-scale`}
-                    style={{ 
-                      backgroundColor: shift.active ? shift.color : shift.color,
-                      color: shift.active ? 'white' : '#374151',
-                      animationDelay: `${(rowIdx * 3 + idx) * 0.05}s`
-                    }}
+                    className={`shift-block-new ${shift.active ? 'active' : ''} ${row.team.toLowerCase()}-block`}
                   >
-                    <span className="shift-time-label">{shift.time}</span>
-                    <span className="shift-worker-label">{shift.worker}</span>
-                    {shift.active && <span className="active-indicator">●</span>}
+                    <div className="block-header">
+                        <span className="time-text">{shift.time}</span>
+                        {shift.active && <Clock size={12} />}
+                    </div>
+                    <div className="worker-text">{shift.worker}</div>
                   </div>
                 ))}
               </div>
             </div>
           ))}
         </div>
+        
         <div className="timeline-legend">
-          <span><span className="dot apm"></span> APM</span>
-          <span><span className="dot noc"></span> NOC</span>
-          <span><span className="dot soc"></span> SOC</span>
-          <span><span className="dot active-dot"></span> Aktiv növbə</span>
+          <div className="legend-item"><span className="dot apm"></span> APM</div>
+          <div className="legend-item"><span className="dot noc"></span> NOC</div>
+          <div className="legend-item"><span className="dot soc"></span> SOC</div>
+          <div className="legend-item"><span className="dot active-dot"></span> Aktiv növbə</div>
         </div>
       </div>
 
       {/* Upcoming Shifts */}
-      <div className="upcoming-section animate-fade-in" style={{ animationDelay: '0.4s' }}>
+      <div className="upcoming-section animate-fade-in" style={{ animationDelay: '0.3s' }}>
         <h2>Gələcək Növbələr (24-48 saat)</h2>
-        <div className="shifts-table">
-          <div className="table-header">
-            <span>TARİX</span>
-            <span>KOMANDA</span>
-            <span>NÖVBƏ VAXTI</span>
-            <span>TƏYİN EDİLMİŞ İŞÇİ</span>
-            <span>STATUS</span>
-            <span>ƏMƏLİYYAT</span>
-          </div>
-          {upcomingShifts.map((shift, idx) => (
-            <div 
-              key={shift.id} 
-              className="table-row animate-slide-in"
-              style={{ animationDelay: `${idx * 0.1}s` }}
-            >
-              <div className="date-cell">
-                <span className="date-label">{shift.date}</span>
-                <span className="date-full">{shift.fullDate}</span>
-              </div>
-              <div>
-                <span className={`team-badge ${shift.team.toLowerCase()}`}>{shift.team}</span>
-              </div>
-              <div className="time-cell">
-                <Clock size={14} />
-                {shift.time}
-              </div>
-              <div className="worker-cell">
-                <Users size={14} />
-                {shift.worker}
-              </div>
-              <div>
-                <span className={`status-badge ${shift.status === 'Boş' ? 'empty' : 'planned'}`}>
-                  {shift.status}
-                </span>
-              </div>
-              <div className="actions-cell">
-                <button className="action-btn" onClick={() => handleChangeShift(shift.id)}>
-                  <Edit size={14} />
-                  Dəyiş
-                </button>
-                <button className="action-btn" onClick={() => handleViewDetail(shift)}>
-                  <Eye size={14} />
-                  Detalı
-                </button>
-              </div>
-            </div>
-          ))}
+        <div className="shifts-table-container">
+          <table className="shifts-table-new">
+            <thead>
+              <tr>
+                <th>TARİX</th>
+                <th>KOMANDA</th>
+                <th>NÖVBƏ VAXTI</th>
+                <th>TƏYİN EDİLMİŞ İŞÇİ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {upcomingShifts.map((shift, idx) => (
+                <tr key={shift.id} style={{ animationDelay: `${idx * 0.05}s` }}>
+                  <td>
+                    <div className="date-cell-new">
+                       {shift.fullDate}
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`team-badge-pill ${shift.team.toLowerCase()}-pill`}>{shift.team}</span>
+                  </td>
+                  <td>
+                    <div className="time-cell-new">
+                      <Clock size={14} />
+                      {shift.time}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="worker-cell-new">
+                      <Users size={14} />
+                      {shift.worker}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
-
       {/* Assign Modal */}
       {showAssignModal && (
         <div className="modal-overlay" onClick={() => setShowAssignModal(false)}>

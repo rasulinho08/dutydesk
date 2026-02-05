@@ -6,9 +6,10 @@ function Login({ onLogin }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  
+
   // Forgot Password States
   const [step, setStep] = useState('login') // login, forgot, verify, newPassword, success
+
   const [forgotEmail, setForgotEmail] = useState('')
   const [verifyCode, setVerifyCode] = useState(['', '', '', '', '', ''])
   const [newPassword, setNewPassword] = useState('')
@@ -17,7 +18,7 @@ function Login({ onLogin }) {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [resendTimer, setResendTimer] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
-  
+
   const codeInputRefs = useRef([])
 
   // Resend timer countdown
@@ -41,7 +42,7 @@ function Login({ onLogin }) {
     if (/[A-Z]/.test(pwd)) strength++
     if (/[0-9]/.test(pwd)) strength++
     if (/[^A-Za-z0-9]/.test(pwd)) strength++
-    
+
     if (strength <= 2) return { level: 'weak', text: 'Zəif', color: '#ef4444' }
     if (strength <= 3) return { level: 'good', text: 'Yaxşı', color: '#f59e0b' }
     return { level: 'strong', text: 'Güclü', color: '#22c55e' }
@@ -66,11 +67,11 @@ function Login({ onLogin }) {
   const handleCodeChange = (index, value) => {
     if (value.length > 1) value = value[0]
     if (!/^\d*$/.test(value)) return
-    
+
     const newCode = [...verifyCode]
     newCode[index] = value
     setVerifyCode(newCode)
-    
+
     // Auto-focus next input
     if (value && index < 5) {
       codeInputRefs.current[index + 1]?.focus()
@@ -132,9 +133,9 @@ function Login({ onLogin }) {
       <div className="login-container">
         <div className="login-card">
           <div className="login-icon">
-            <Lock size={32} color="#4a6fa5" />
+            <Lock size={32} color="white" />
           </div>
-          
+
           <h1 className="login-title">Xoş Gəlmisiniz</h1>
           <p className="login-subtitle">Hesabınıza daxil olun</p>
 
@@ -199,9 +200,9 @@ function Login({ onLogin }) {
           </button>
 
           <div className="login-icon">
-            <Key size={32} color="#4a6fa5" />
+            <Key size={32} color="white" />
           </div>
-          
+
           <h1 className="login-title">Şifrəni Unutmusunuz?</h1>
           <p className="login-subtitle">Email ünvanınızı daxil edin və biz sizə təsdiq kodu göndərəcəyik</p>
 
@@ -240,9 +241,9 @@ function Login({ onLogin }) {
           </button>
 
           <div className="login-icon verify-icon">
-            <Shield size={32} color="#4a6fa5" />
+            <Shield size={32} color="white" />
           </div>
-          
+
           <h1 className="login-title">Email Təsdiqi</h1>
           <p className="login-subtitle">
             6 rəqəmli təsdiq kodunu göndərdik<br />
@@ -297,9 +298,9 @@ function Login({ onLogin }) {
           </button>
 
           <div className="login-icon">
-            <Lock size={32} color="#4a6fa5" />
+            <Lock size={32} color="white" />
           </div>
-          
+
           <h1 className="login-title">Yeni Şifrə Yaradın</h1>
           <p className="login-subtitle">Yeni şifrəniz əvvəlki şifrələrdən fərqli olmalıdır</p>
 
@@ -326,7 +327,7 @@ function Login({ onLogin }) {
               {newPassword && (
                 <div className="password-strength">
                   <div className="strength-bar">
-                    <div 
+                    <div
                       className={`strength-fill ${passwordStrength.level}`}
                       style={{ width: passwordStrength.level === 'weak' ? '33%' : passwordStrength.level === 'good' ? '66%' : '100%' }}
                     ></div>
@@ -368,9 +369,9 @@ function Login({ onLogin }) {
               )}
             </div>
 
-            <button 
-              type="submit" 
-              className="login-button" 
+            <button
+              type="submit"
+              className="login-button"
               disabled={isLoading || !passwordsMatch}
             >
               {isLoading ? <span className="btn-spinner"></span> : 'Şifrəni Yenilə'}
@@ -389,7 +390,7 @@ function Login({ onLogin }) {
           <div className="success-icon">
             <CheckCircle size={48} color="white" />
           </div>
-          
+
           <h1 className="login-title success-title">Uğurlu!</h1>
           <p className="login-subtitle">Şifrəniz uğurla yeniləndi</p>
 

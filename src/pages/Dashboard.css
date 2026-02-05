@@ -1,36 +1,72 @@
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes modalIn {
-  from { opacity: 0; transform: scale(0.9) translateY(-20px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(30, 90, 138, 0.4); }
-  50% { box-shadow: 0 0 0 10px rgba(30, 90, 138, 0); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(30, 90, 138, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 0 10px rgba(30, 90, 138, 0);
+  }
 }
 
-.animate-fade-in { animation: fadeIn 0.5s ease forwards; }
-.animate-slide-in { animation: slideIn 0.5s ease forwards; }
-.animate-modal { animation: modalIn 0.3s ease forwards; }
+.animate-fade-in {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.5s ease forwards;
+}
+
+.animate-modal {
+  animation: modalIn 0.3s ease forwards;
+}
 
 .dashboard {
   width: 100%;
   max-width: 100%;
-  padding: 24px;
+  /* padding: 24px; */
 }
 
 .dashboard.loading-state {
@@ -78,42 +114,50 @@
 }
 
 /* Shift Header */
+.shift-container {
+  background-color: #1380AF;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
 .shift-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 24px;
+  /* margin-bottom: 24px; */
 }
 
 .shift-info {
   display: flex;
   flex-direction: column;
+  margin-bottom: 40px;
 }
 
 .shift-label {
   font-size: 13px;
-  color: #6b7280;
+  color: white;
   margin-bottom: 4px;
 }
 
 .shift-time {
   font-size: 36px;
   font-weight: 700;
-  color: #1a1a2e;
+  color: white !important;
   margin-bottom: 4px;
   font-variant-numeric: tabular-nums;
 }
 
 .shift-date {
   font-size: 14px;
-  color: #6b7280;
+  color: white !important;
 }
 
 .shift-status {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: white;
+  background-color: #54a0c1;
   padding: 16px 24px;
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
@@ -122,7 +166,7 @@
 .status-circle {
   width: 56px;
   height: 56px;
-  border: 3px solid #1e5a8a;
+  border: 3px solid white;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -135,6 +179,7 @@
 
 .status-circle.pulse {
   animation: pulse 2s infinite;
+  color: white;
 }
 
 .status-circle:hover {
@@ -155,19 +200,33 @@
 
 .status-label {
   font-size: 12px;
-  color: #6b7280;
+  color: white;
 }
 
 .status-time {
   font-size: 14px;
   font-weight: 600;
-  color: #1e5a8a;
+  color: white;
   min-width: 80px;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
 
-/* Shift Stats */
+.stat-card-dashboard {
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  background-color: #54a0c1;
+}
+
+.stat-label-dashboard {
+  font-size: 16px;
+  color: #e0e0e0;
+}
+
+/* Shift Stats
 .shift-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -229,7 +288,7 @@
 
 .stat-card.white .stat-label {
   color: #6b7280;
-}
+} */
 
 /* Check-in Panel */
 .checkin-panel {
@@ -534,7 +593,7 @@
 }
 
 /* Shift Items */
-.shift-item {
+.shift-item-dashboard {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -915,17 +974,17 @@
     flex-direction: column;
     gap: 20px;
   }
-  
+
   .checkin-details {
     flex-direction: column;
     gap: 12px;
   }
-  
+
   .current-time-display {
     margin-left: 0;
     margin-top: 10px;
   }
-  
+
   .checkin-info {
     flex-wrap: wrap;
   }

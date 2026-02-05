@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { 
-  LayoutDashboard, BarChart2, History, Calendar, 
-  Users, LogOut, Menu, Bell, ChevronRight
+import {
+  LayoutDashboard, BarChart2, History, Calendar,
+  Users, LogOut, Menu, ChevronRight
 } from 'lucide-react'
+import Header from './Header'
 import './AdminLayout.css'
 
 function AdminLayout({ children, onLogout }) {
@@ -11,8 +12,8 @@ function AdminLayout({ children, onLogout }) {
 
   const menuItems = [
     { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
-    { path: '/admin/statistics', icon: BarChart2, label: 'Statistics' },
-    { path: '/admin/history', icon: History, label: 'History' },
+    // { path: '/admin/history', icon: History, label: 'History' },
+    { path: '/admin/statistics', icon: BarChart2, label: 'History' },
     { path: '/admin/schedule', icon: Calendar, label: 'Work schedule' },
     { path: '/admin/workers', icon: Users, label: 'Workers' }
   ]
@@ -20,17 +21,7 @@ function AdminLayout({ children, onLogout }) {
   return (
     <div className="admin-layout">
       {/* Header */}
-      <header className="admin-header">
-        <div className="header-logo">
-          <span className="logo-text">DutyDesk</span>
-        </div>
-        <div className="header-actions">
-          <button className="notification-btn">
-            <Bell size={20} />
-          </button>
-          <div className="flag-icon">🇦🇿</div>
-        </div>
-      </header>
+      <Header />
 
       <div className="admin-body">
         {/* Sidebar */}
@@ -39,7 +30,7 @@ function AdminLayout({ children, onLogout }) {
             {!collapsed && (
               <>
                 <h2>Dashboard</h2>
-                <span>Admin Panel</span>
+                <span className="admin-panel-label">Admin Panel</span>
               </>
             )}
             <button className="menu-toggle" onClick={() => setCollapsed(!collapsed)}>
@@ -69,7 +60,7 @@ function AdminLayout({ children, onLogout }) {
 
           <div className="sidebar-footer">
             <div className="user-info">
-              <div className="user-avatar">Və</div>
+              <div className="user-avatar">VƏ</div>
               {!collapsed && (
                 <div className="user-details">
                   <span className="user-name">Vüsal Əliyev</span>

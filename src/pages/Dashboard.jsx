@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { 
+import {
   Clock, Calendar, ArrowRight, FileText, PlusCircle, CheckCircle, X, Check, RefreshCw,
   LogIn, LogOut, AlertTriangle, Timer, Activity
 } from 'lucide-react'
@@ -15,7 +15,7 @@ function Dashboard() {
   const [noteText, setNoteText] = useState('')
   const [timeLeft, setTimeLeft] = useState('2:30')
   const [notes, setNotes] = useState([])
-  
+
   // Check-in/Check-out State
   const [checkInStatus, setCheckInStatus] = useState({
     checkedIn: false,
@@ -29,12 +29,12 @@ function Dashboard() {
 
   useEffect(() => {
     setTimeout(() => setIsLoading(false), 500)
-    
+
     // Update time every second
     const timer = setInterval(() => {
       setCurrentTime(new Date())
     }, 1000)
-    
+
     return () => clearInterval(timer)
   }, [])
 
@@ -150,24 +150,39 @@ function Dashboard() {
       </div>
 
       {/* Shift Info Header */}
-      <div className="shift-header animate-fade-in">
-        <div className="shift-info">
-          <span className="shift-label">İndiki Növbə</span>
-          <h1 className="shift-time">08:00 - 16:00</h1>
-          <span className="shift-date">14 Yanvar 2026, Çərşənbə</span>
-        </div>
-
-        <div className="shift-status">
-          <div className="status-circle pulse">
-            <Clock size={28} />
+      <div className='shift-container'>
+        <div className="shift-header animate-fade-in">
+          <div className="shift-info">
+            <span className="shift-label">İndiki Növbə</span>
+            <h1 className="shift-time">08:00 - 16:00</h1>
+            <span className="shift-date">14 Yanvar 2026, Çərşənbə</span>
           </div>
-          <span className="status-label">Aktiv</span>
-          <span className="status-time">{timeLeft}h qalıb</span>
+
+          <div className="shift-status">
+            <div className="status-circle pulse">
+              <Clock size={28} />
+            </div>
+            <span className="status-label">Aktiv</span>
+            <span className="status-time">{timeLeft}h qalıb</span>
+          </div>
+        </div>
+        <div className="shift-stats">
+          <div className="stat-card-dashboard blue animate-slide-in" style={{ animationDelay: '0.1s' }}>
+            <span className="stat-value">8h</span>
+            <span className="stat-label-dashboard">Növbə müddəti</span>
+          </div>
+          <div className="stat-card-dashboard light animate-slide-in" style={{ animationDelay: '0.2s' }}>
+            <span className="stat-value">APM</span>
+            <span className="stat-label-dashboard">Komanda</span>
+          </div>
+          <div className="stat-card-dashboard white animate-slide-in" style={{ animationDelay: '0.3s' }}>
+            <span className="stat-value">Gündüz</span>
+            <span className="stat-label-dashboard">Növbə tipi</span>
+          </div>
         </div>
       </div>
-
       {/* Check-in/Check-out Panel */}
-      <div className="checkin-panel animate-fade-in" style={{ animationDelay: '0.1s' }}>
+      {/* <div className="checkin-panel animate-fade-in" style={{ animationDelay: '0.1s' }}>
         <div className="checkin-status">
           <div className="checkin-info">
             <Activity size={20} className="pulse" />
@@ -197,7 +212,7 @@ function Dashboard() {
         </div>
         <div className="checkin-actions">
           {!checkInStatus.checkedIn ? (
-            <button 
+            <button
               className="checkin-btn check-in"
               onClick={() => setShowCheckInConfirm(true)}
             >
@@ -205,7 +220,7 @@ function Dashboard() {
               Check-in Et
             </button>
           ) : !checkInStatus.checkedOut ? (
-            <button 
+            <button
               className="checkin-btn check-out"
               onClick={() => setShowCheckOutConfirm(true)}
             >
@@ -219,7 +234,7 @@ function Dashboard() {
             </div>
           )}
         </div>
-      </div>
+      </div> */}
 
       {/* Handover Reminder - show if checked in but handover not done */}
       {checkInStatus.checkedIn && !checkInStatus.checkedOut && (
@@ -239,7 +254,7 @@ function Dashboard() {
       )}
 
       {/* Shift Stats */}
-      <div className="shift-stats">
+      {/* <div className="shift-stats">
         <div className="stat-card blue animate-slide-in" style={{ animationDelay: '0.1s' }}>
           <span className="stat-value">8h</span>
           <span className="stat-label">Növbə müddəti</span>
@@ -252,10 +267,10 @@ function Dashboard() {
           <span className="stat-value">Gündüz</span>
           <span className="stat-label">Növbə tipi</span>
         </div>
-      </div>
+      </div> */}
 
       {/* Action Buttons */}
-      <div className="action-buttons animate-fade-in">
+      {/* <div className="action-buttons animate-fade-in">
         <button className="action-btn primary" onClick={handleGoToForm}>
           <FileText size={18} />
           <span>Təhvil-Təslim Formu</span>
@@ -264,7 +279,7 @@ function Dashboard() {
           <PlusCircle size={18} />
           <span>Qeyd Əlavə Et</span>
         </button>
-      </div>
+      </div> */}
 
       {/* Notes List */}
       {notes.length > 0 && (
@@ -280,38 +295,38 @@ function Dashboard() {
       )}
 
       {/* Content Grid */}
-      <div className="content-grid">
-        {/* Upcoming Shifts */}
-        <div className="card animate-slide-in" style={{ animationDelay: '0.2s' }}>
-          <div className="card-header">
-            <div className="card-title">
-              <Calendar size={18} />
-              <span>Gələcək Növbələr</span>
-            </div>
-            <button className="card-link" onClick={handleViewAllShifts}>
-              Hamısını Gör <ArrowRight size={14} />
-            </button>
+      {/* <div className="content-grid"> */}
+      {/* Upcoming Shifts */}
+      <div className="card animate-slide-in" style={{ animationDelay: '0.2s' }}>
+        <div className="card-header">
+          <div className="card-title">
+            <Calendar size={18} />
+            <span>Gələcək Növbələr</span>
           </div>
-          <div className="card-content">
-            {upcomingShifts.map((shift, index) => (
-              <div key={index} className="shift-item">
-                <div className="shift-item-info">
-                  <span className="shift-item-date">{shift.date}</span>
-                  <span className="shift-item-time">
-                    <Clock size={14} />
-                    {shift.time}
-                  </span>
-                </div>
-                <span className={`shift-badge ${shift.typeClass}`}>
-                  {shift.type}
+          {/* <button className="card-link" onClick={handleViewAllShifts}>
+            Hamısını Gör <ArrowRight size={14} />
+          </button> */}
+        </div>
+        <div className="card-content">
+          {upcomingShifts.map((shift, index) => (
+            <div key={index} className="shift-item-dashboard">
+              <div className="shift-item-info">
+                <span className="shift-item-date">{shift.date}</span>
+                <span className="shift-item-time">
+                  <Clock size={14} />
+                  {shift.time}
                 </span>
               </div>
-            ))}
-          </div>
+              <span className={`shift-badge ${shift.typeClass}`}>
+                {shift.type}
+              </span>
+            </div>
+          ))}
         </div>
+      </div>
 
-        {/* Recent Handovers */}
-        <div className="card animate-slide-in" style={{ animationDelay: '0.3s' }}>
+      {/* Recent Handovers */}
+      {/* <div className="card animate-slide-in" style={{ animationDelay: '0.3s' }}>
           <div className="card-header">
             <div className="card-title">
               <FileText size={18} />
@@ -332,11 +347,11 @@ function Dashboard() {
               </div>
             ))}
           </div>
-        </div>
-      </div>
+        </div> */}
+      {/* </div> */}
 
       {/* Reminder Banner */}
-      <div className="reminder-banner animate-fade-in" style={{ animationDelay: '0.4s' }}>
+      {/* <div className="reminder-banner animate-fade-in" style={{ animationDelay: '0.4s' }}>
         <div className="reminder-icon">
           <Clock size={24} />
         </div>
@@ -346,11 +361,11 @@ function Dashboard() {
             <strong>Xatırlatma</strong>
           </div>
           <p className="reminder-text">
-            Növbə bitənə <strong>30 dəqiqə qalmış</strong> təhvil-təslim formunu doldurmağa başlayın. 
+            Növbə bitənə <strong>30 dəqiqə qalmış</strong> təhvil-təslim formunu doldurmağa başlayın.
             Bütün sahələri düzgün və aydın doldurduğunuzdan əmin olun.
           </p>
         </div>
-      </div>
+      </div> */}
 
       {/* Add Note Modal */}
       {showNoteModal && (
@@ -365,7 +380,7 @@ function Dashboard() {
             <div className="modal-body">
               <div className="form-group">
                 <label>Qeyd mətni</label>
-                <textarea 
+                <textarea
                   value={noteText}
                   onChange={e => setNoteText(e.target.value)}
                   placeholder="Qeydinizi bura yazın..."
@@ -399,7 +414,7 @@ function Dashboard() {
                 <LogIn size={32} />
               </div>
               <p className="confirm-text">
-                <strong>{currentTime.toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' })}</strong> 
+                <strong>{currentTime.toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' })}</strong>
                 {' '}saatında check-in etmək istəyirsiniz?
               </p>
               <span className="confirm-note">Növbəniz: 08:00 - 16:00</span>
@@ -430,7 +445,7 @@ function Dashboard() {
                 <LogOut size={32} />
               </div>
               <p className="confirm-text">
-                <strong>{currentTime.toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' })}</strong> 
+                <strong>{currentTime.toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' })}</strong>
                 {' '}saatında check-out etmək istəyirsiniz?
               </p>
               <span className="confirm-note">Check-in vaxtı: {checkInStatus.checkInTime}</span>

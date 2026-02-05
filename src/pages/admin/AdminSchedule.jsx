@@ -44,27 +44,27 @@ function AdminSchedule() {
     const month = date.getMonth()
     const firstDay = new Date(year, month, 1).getDay()
     const daysInMonth = new Date(year, month + 1, 0).getDate()
-    
+
     const days = []
     const adjustedFirstDay = firstDay === 0 ? 6 : firstDay - 1 // Adjust for Monday start
-    
+
     // Previous month days
     for (let i = 0; i < adjustedFirstDay; i++) {
       const prevMonthDays = new Date(year, month, 0).getDate()
       days.push({ day: prevMonthDays - adjustedFirstDay + i + 1, currentMonth: false })
     }
-    
+
     // Current month days
     for (let i = 1; i <= daysInMonth; i++) {
       days.push({ day: i, currentMonth: true })
     }
-    
+
     // Next month days
     const remaining = 42 - days.length
     for (let i = 1; i <= remaining; i++) {
       days.push({ day: i, currentMonth: false })
     }
-    
+
     return days
   }
 
@@ -178,8 +178,8 @@ function AdminSchedule() {
           {getDaysInMonth(currentDate).map((dayObj, idx) => {
             const shift = dayObj.currentMonth ? getShiftForDay(dayObj.day) : null
             return (
-              <div 
-                key={idx} 
+              <div
+                key={idx}
                 className={`calendar-day ${!dayObj.currentMonth ? 'other-month' : ''} ${shift ? 'has-shift' : ''}`}
                 onClick={() => handleDayClick(dayObj)}
               >
@@ -189,8 +189,11 @@ function AdminSchedule() {
                 </span>
                 {shift && (
                   <div className={`shift-event ${shift.team.toLowerCase()}`}>
-                    <span className="shift-team">{shift.team}</span>
-                    <span className="shift-time">{shift.time}</span>
+                    <span className={`team-badge-pill-sc ${shift.team.toLowerCase()}-pill`}>{shift.team}</span>
+                    <div className='shift-time-cont'>
+                      <Clock size={16} color="grey" />
+                      <span className="shift-time-schd">{shift.time}</span>
+                    </div>
                     <span className="shift-worker">{shift.worker}</span>
                   </div>
                 )}
@@ -237,9 +240,9 @@ function AdminSchedule() {
             <div className="modal-body">
               <div className="form-group">
                 <label>Komanda</label>
-                <select 
+                <select
                   value={newShift.team}
-                  onChange={e => setNewShift({...newShift, team: e.target.value})}
+                  onChange={e => setNewShift({ ...newShift, team: e.target.value })}
                 >
                   <option>APM</option>
                   <option>NOC</option>
@@ -248,9 +251,9 @@ function AdminSchedule() {
               </div>
               <div className="form-group">
                 <label>Vaxt</label>
-                <select 
+                <select
                   value={newShift.time}
-                  onChange={e => setNewShift({...newShift, time: e.target.value})}
+                  onChange={e => setNewShift({ ...newShift, time: e.target.value })}
                 >
                   <option>09:00-17:00</option>
                   <option>08:00-20:00</option>
@@ -259,9 +262,9 @@ function AdminSchedule() {
               </div>
               <div className="form-group">
                 <label>İşçi</label>
-                <select 
+                <select
                   value={newShift.worker}
-                  onChange={e => setNewShift({...newShift, worker: e.target.value})}
+                  onChange={e => setNewShift({ ...newShift, worker: e.target.value })}
                 >
                   <option value="">İşçi seçin...</option>
                   <option>Leyla Mammadova</option>

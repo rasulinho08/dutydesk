@@ -1,40 +1,40 @@
+/* Header.css */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 32px;
+  padding: 0px 30px;
   background: white;
   border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  animation: slideDown 0.4s ease forwards;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .header-logo {
   display: flex;
   align-items: center;
-  gap: 10px;
 }
 
 .logo-img {
-  height: 40px;
+  height: 70px;
   width: auto;
   object-fit: contain;
-  transition: transform 0.3s ease;
-}
-
-.logo-img:hover {
-  transform: scale(1.1);
-}
-
-.logo-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.logo-text {
-  font-size: 22px;
-  font-weight: 700;
-  color: #1e5a8a;
-  letter-spacing: 0.5px;
+  scale: 1.7;
 }
 
 .header-actions {
@@ -44,27 +44,45 @@
 }
 
 .notification-btn {
-  background: transparent;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f9fafb;
   border: none;
+  border-radius: 10px;
   color: #6b7280;
   cursor: pointer;
-  padding: 8px;
-  border-radius: 8px;
-  transition: background 0.2s;
+  transition: all 0.2s ease;
 }
 
 .notification-btn:hover {
-  background: #f3f4f6;
+  background: #e3f2fd;
+  color: #1d4ed8;
+  /* blue tone that matches many dashboard accents */
+  transform: scale(1.08);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
 }
 
 .flag-icon {
   border-radius: 4px;
   overflow: hidden;
-  display: flex;
-  align-items: center;
+  line-height: 0;
 }
 
 .flag-icon img {
   display: block;
   border-radius: 4px;
+}
+
+/* Optional: make it responsive for smaller screens */
+@media (max-width: 768px) {
+  .header {
+    padding: 10px 16px;
+  }
+
+  .logo-img {
+    height: 42px;
+  }
 }

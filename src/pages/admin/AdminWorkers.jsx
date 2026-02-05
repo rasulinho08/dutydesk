@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { 
-  Search, Filter, Users, Mail, Phone, 
+import {
+  Search, Filter, Users, Mail, Phone,
   MoreVertical, Edit, Trash2, Plus, X, Check, RefreshCw, UserPlus
 } from 'lucide-react'
 import './AdminWorkers.css'
@@ -40,15 +40,15 @@ function AdminWorkers() {
   ])
 
   const stats = [
-    { label: 'Ümumi İşçi', value: workers.length, icon: Users, color: '#1e5a8a' },
-    { label: 'APM Komandası', sublabel: `${workers.filter(w => w.team === 'APM' && w.status === 'Növbədə').length} növbədə`, value: workers.filter(w => w.team === 'APM').length, color: '#1e5a8a' },
-    { label: 'NOC Komandası', sublabel: `${workers.filter(w => w.team === 'NOC' && w.status === 'Növbədə').length} növbədə`, value: workers.filter(w => w.team === 'NOC').length, color: '#22c55e' },
-    { label: 'SOC Komandası', sublabel: `${workers.filter(w => w.team === 'SOC' && w.status === 'Növbədə').length} növbədə`, value: workers.filter(w => w.team === 'SOC').length, color: '#a855f7' }
+    { label: 'Ümumi İşçi', value: workers.length, icon: Users, color: '#155DFC' },
+    { label: 'APM Komandası', sublabel: `${workers.filter(w => w.team === 'APM' && w.status === 'Növbədə').length} növbədə`, value: workers.filter(w => w.team === 'APM').length, bg: '#1380AF' },
+    { label: 'NOC Komandası', sublabel: `${workers.filter(w => w.team === 'NOC' && w.status === 'Növbədə').length} növbədə`, value: workers.filter(w => w.team === 'NOC').length, bg: '#1D984B' },
+    { label: 'SOC Komandası', sublabel: `${workers.filter(w => w.team === 'SOC' && w.status === 'Növbədə').length} növbədə`, value: workers.filter(w => w.team === 'SOC').length, bg: '#7F38B2' }
   ]
 
   const filteredWorkers = workers.filter(worker => {
     const matchesSearch = worker.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         worker.email.toLowerCase().includes(searchQuery.toLowerCase())
+      worker.email.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesTeam = selectedTeam === 'Bütün Komandalar' || worker.team === selectedTeam
     const matchesStatus = selectedStatus === 'Bütün Statuslar' || worker.status === selectedStatus
     return matchesSearch && matchesTeam && matchesStatus
@@ -88,7 +88,7 @@ function AdminWorkers() {
   }
 
   const openEditModal = (worker) => {
-    setSelectedWorker({...worker})
+    setSelectedWorker({ ...worker })
     setShowEditModal(true)
     setActiveDropdown(null)
   }
@@ -100,16 +100,16 @@ function AdminWorkers() {
   }
 
   const getAvatarColor = (status) => {
-    switch(status) {
-      case 'Növbədə': return '#1e5a8a'
-      case 'Əlçatandır': return '#22c55e'
-      case 'İstirahətdə': return '#6b7280'
+    switch (status) {
+      case 'Növbədə': return '#1380AF'
+      case 'Əlçatandır': return '#1D984B'
+      case 'İstirahətdə': return '#7F38B2'
       default: return '#1e5a8a'
     }
   }
 
   const getStatusColor = (status) => {
-    switch(status) {
+    switch (status) {
       case 'Növbədə': return { bg: '#dbeafe', color: '#1e5a8a' }
       case 'Əlçatandır': return { bg: '#dcfce7', color: '#16a34a' }
       case 'İstirahətdə': return { bg: '#f3f4f6', color: '#6b7280' }
@@ -139,25 +139,25 @@ function AdminWorkers() {
       {/* Stats Cards */}
       <div className="workers-stats">
         {stats.map((stat, idx) => (
-          <div key={idx} className="stat-card animate-slide-in" style={{ animationDelay: `${idx * 0.1}s` }}>
-            <div className="stat-icon" style={{ color: stat.color }}>
-              <Users size={24} />
-            </div>
-            <div className="stat-info">
-              <span className="stat-value">{stat.value}</span>
-              <span className="stat-label">{stat.label}</span>
+          <div key={idx} className="stat-card-workers animate-slide-in" style={{ animationDelay: `${idx * 0.1}s` }}>
+            <div className="stat-info-workers">
+              <div className="stat-icon" style={{ color: stat.color || 'white', backgroundColor: stat.bg || '', marginBottom: "15px" }}>
+                <Users size={24} />
+              </div>
+              <span className="stat-label-workers">{stat.label}</span>
               {stat.sublabel && <span className="stat-sublabel">{stat.sublabel}</span>}
             </div>
+            <span className="stat-value-workers">{stat.value}</span>
           </div>
         ))}
       </div>
 
       {/* Filters */}
-      <div className="filters-row animate-fade-in">
+      <div className="filters-row-workers animate-fade-in">
         <div className="search-box">
           <Search size={18} className="search-icon" />
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder="İşçi axtar..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
@@ -181,10 +181,10 @@ function AdminWorkers() {
             <option>İstirahətdə</option>
           </select>
         </div>
-        <button className="btn-add" onClick={() => setShowAddModal(true)}>
+        {/* <button className="btn-add" onClick={() => setShowAddModal(true)}>
           <UserPlus size={18} />
           Yeni İşçi
-        </button>
+        </button> */}
       </div>
 
       {/* Results Count */}
@@ -197,13 +197,13 @@ function AdminWorkers() {
         {filteredWorkers.map((worker, idx) => {
           const statusStyle = getStatusColor(worker.status)
           return (
-            <div 
-              key={worker.id} 
+            <div
+              key={worker.id}
               className="worker-card animate-scale-in"
               style={{ animationDelay: `${idx * 0.05}s` }}
             >
               <div className="card-header">
-                <div 
+                <div
                   className="worker-avatar"
                   style={{ backgroundColor: getAvatarColor(worker.status) }}
                 >
@@ -211,15 +211,15 @@ function AdminWorkers() {
                 </div>
                 <div className="worker-info">
                   <h4>{worker.name}</h4>
-                  <span 
+                  <span
                     className="worker-status"
                     style={{ backgroundColor: statusStyle.bg, color: statusStyle.color }}
                   >
                     {worker.status}
                   </span>
                 </div>
-                <div className="card-menu">
-                  <button 
+                {/* <div className="card-menu">
+                  <button
                     className="menu-btn"
                     onClick={() => setActiveDropdown(activeDropdown === worker.id ? null : worker.id)}
                   >
@@ -237,12 +237,12 @@ function AdminWorkers() {
                       </button>
                     </div>
                   )}
-                </div>
+                </div> */}
               </div>
               <div className="card-body">
                 <div className="info-row team">
                   <Users size={14} />
-                  <span className="team-badge">{worker.team}</span>
+                  <span className={`team-badge-workers ${worker.team}`}>{worker.team}</span>
                 </div>
                 <div className="info-row">
                   <Mail size={14} />
@@ -271,37 +271,37 @@ function AdminWorkers() {
             <div className="modal-body">
               <div className="form-group">
                 <label>Ad Soyad</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={newWorker.name}
-                  onChange={e => setNewWorker({...newWorker, name: e.target.value})}
+                  onChange={e => setNewWorker({ ...newWorker, name: e.target.value })}
                   placeholder="Ad Soyad daxil edin"
                 />
               </div>
               <div className="form-group">
                 <label>Email</label>
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   value={newWorker.email}
-                  onChange={e => setNewWorker({...newWorker, email: e.target.value})}
+                  onChange={e => setNewWorker({ ...newWorker, email: e.target.value })}
                   placeholder="Email daxil edin"
                 />
               </div>
               <div className="form-group">
                 <label>Telefon</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={newWorker.phone}
-                  onChange={e => setNewWorker({...newWorker, phone: e.target.value})}
+                  onChange={e => setNewWorker({ ...newWorker, phone: e.target.value })}
                   placeholder="+994 XX XXX XX XX"
                 />
               </div>
               <div className="form-row">
                 <div className="form-group">
                   <label>Komanda</label>
-                  <select 
+                  <select
                     value={newWorker.team}
-                    onChange={e => setNewWorker({...newWorker, team: e.target.value})}
+                    onChange={e => setNewWorker({ ...newWorker, team: e.target.value })}
                   >
                     <option>APM</option>
                     <option>NOC</option>
@@ -310,9 +310,9 @@ function AdminWorkers() {
                 </div>
                 <div className="form-group">
                   <label>Status</label>
-                  <select 
+                  <select
                     value={newWorker.status}
-                    onChange={e => setNewWorker({...newWorker, status: e.target.value})}
+                    onChange={e => setNewWorker({ ...newWorker, status: e.target.value })}
                   >
                     <option>Əlçatandır</option>
                     <option>Növbədə</option>
@@ -345,34 +345,34 @@ function AdminWorkers() {
             <div className="modal-body">
               <div className="form-group">
                 <label>Ad Soyad</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={selectedWorker.name}
-                  onChange={e => setSelectedWorker({...selectedWorker, name: e.target.value})}
+                  onChange={e => setSelectedWorker({ ...selectedWorker, name: e.target.value })}
                 />
               </div>
               <div className="form-group">
                 <label>Email</label>
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   value={selectedWorker.email}
-                  onChange={e => setSelectedWorker({...selectedWorker, email: e.target.value})}
+                  onChange={e => setSelectedWorker({ ...selectedWorker, email: e.target.value })}
                 />
               </div>
               <div className="form-group">
                 <label>Telefon</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={selectedWorker.phone}
-                  onChange={e => setSelectedWorker({...selectedWorker, phone: e.target.value})}
+                  onChange={e => setSelectedWorker({ ...selectedWorker, phone: e.target.value })}
                 />
               </div>
               <div className="form-row">
                 <div className="form-group">
                   <label>Komanda</label>
-                  <select 
+                  <select
                     value={selectedWorker.team}
-                    onChange={e => setSelectedWorker({...selectedWorker, team: e.target.value})}
+                    onChange={e => setSelectedWorker({ ...selectedWorker, team: e.target.value })}
                   >
                     <option>APM</option>
                     <option>NOC</option>
@@ -381,9 +381,9 @@ function AdminWorkers() {
                 </div>
                 <div className="form-group">
                   <label>Status</label>
-                  <select 
+                  <select
                     value={selectedWorker.status}
-                    onChange={e => setSelectedWorker({...selectedWorker, status: e.target.value})}
+                    onChange={e => setSelectedWorker({ ...selectedWorker, status: e.target.value })}
                   >
                     <option>Əlçatandır</option>
                     <option>Növbədə</option>
