@@ -6,8 +6,7 @@ import {
   FileText,
   History,
   LogOut,
-  Menu,
-  ChevronRight
+  Menu
 } from 'lucide-react'
 import Header from './Header'
 import './Layout.css'
@@ -42,11 +41,6 @@ function Layout({ children, onLogout }) {
               <Menu size={20} />
             </button>
           </div>
-
-          {/* Collapse Toggle Button */}
-          <button className="collapse-toggle" onClick={() => setCollapsed(!collapsed)}>
-            <ChevronRight size={16} className={collapsed ? '' : 'rotated'} />
-          </button>
 
           <nav className="sidebar-nav">
             {menuItems.map(item => (

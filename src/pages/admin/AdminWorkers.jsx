@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Search, Filter, Users, Mail, Phone,
   MoreVertical, Edit, Trash2, Plus, X, Check, RefreshCw, UserPlus
@@ -17,18 +17,37 @@ function AdminWorkers() {
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
   const [activeDropdown, setActiveDropdown] = useState(null)
+  const [showTeamDropdown, setShowTeamDropdown] = useState(false)
+
+  const dropdownRef = useRef(null)
 
   const [newWorker, setNewWorker] = useState({
     name: '',
     email: '',
     phone: '',
-    team: 'APM',
+    team: '',
     status: 'Əlçatandır'
   })
 
   useEffect(() => {
     setTimeout(() => setIsLoading(false), 600)
   }, [])
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowTeamDropdown(false)
+      }
+    }
+
+    if (showTeamDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showTeamDropdown])
 
   const [workers, setWorkers] = useState([
     { id: 1, name: 'Leyla Mammadova', email: 'leyla@company.az', phone: '+994 50 123 45 67', team: 'APM', status: 'Növbədə' },
@@ -99,11 +118,11 @@ function AdminWorkers() {
     setActiveDropdown(null)
   }
 
-  const getAvatarColor = (status) => {
-    switch (status) {
-      case 'Növbədə': return '#1380AF'
-      case 'Əlçatandır': return '#1D984B'
-      case 'İstirahətdə': return '#7F38B2'
+  const getAvatarColor = (team) => {
+    switch (team) {
+      case 'APM': return '#1380AF'
+      case 'NOC': return '#1D984B'
+      case 'SOC': return '#7F38B2'
       default: return '#1e5a8a'
     }
   }
@@ -136,10 +155,21 @@ function AdminWorkers() {
         <span>{toastMessage}</span>
       </div>
 
+      {/* Page Header */}
+      <div className="page-header-workers">
+        <div className="header-left">
+          <div className="header-icon">
+            <Users size={24} />
+          </div>
+          <h1>İşçilər</h1>
+        </div>
+      </div>
+
       {/* Stats Cards */}
       <div className="workers-stats">
         {stats.map((stat, idx) => (
           <div key={idx} className="stat-card-workers animate-slide-in" style={{ animationDelay: `${idx * 0.1}s` }}>
+            <span className="stat-value-workers">{stat.value}</span>
             <div className="stat-info-workers">
               <div className="stat-icon" style={{ color: stat.color || 'white', backgroundColor: stat.bg || '', marginBottom: "15px" }}>
                 <Users size={24} />
@@ -147,7 +177,6 @@ function AdminWorkers() {
               <span className="stat-label-workers">{stat.label}</span>
               {stat.sublabel && <span className="stat-sublabel">{stat.sublabel}</span>}
             </div>
-            <span className="stat-value-workers">{stat.value}</span>
           </div>
         ))}
       </div>
@@ -181,15 +210,15 @@ function AdminWorkers() {
             <option>İstirahətdə</option>
           </select>
         </div>
-        {/* <button className="btn-add" onClick={() => setShowAddModal(true)}>
-          <UserPlus size={18} />
-          Yeni İşçi
-        </button> */}
       </div>
 
       {/* Results Count */}
       <div className="results-count">
-        {filteredWorkers.length} İşçi göstərilir
+        <span>{filteredWorkers.length} İşçi göstərilir</span>
+        <button className="btn-add-employee" onClick={() => setShowAddModal(true)}>
+          <Plus size={18} />
+          Add Employee
+        </button>
       </div>
 
       {/* Workers Grid */}
@@ -205,7 +234,7 @@ function AdminWorkers() {
               <div className="card-header">
                 <div
                   className="worker-avatar"
-                  style={{ backgroundColor: getAvatarColor(worker.status) }}
+                  style={{ backgroundColor: getAvatarColor(worker.team) }}
                 >
                   {worker.name.split(' ').map(n => n[0]).join('')}
                 </div>
@@ -270,61 +299,98 @@ function AdminWorkers() {
             </div>
             <div className="modal-body">
               <div className="form-group">
-                <label>Ad Soyad</label>
+                <label>İşçi Adı və Soyadı</label>
                 <input
                   type="text"
                   value={newWorker.name}
                   onChange={e => setNewWorker({ ...newWorker, name: e.target.value })}
-                  placeholder="Ad Soyad daxil edin"
-                />
-              </div>
-              <div className="form-group">
-                <label>Email</label>
-                <input
-                  type="email"
-                  value={newWorker.email}
-                  onChange={e => setNewWorker({ ...newWorker, email: e.target.value })}
-                  placeholder="Email daxil edin"
+                  placeholder="Ad Soyad"
                 />
               </div>
               <div className="form-group">
                 <label>Telefon</label>
                 <input
-                  type="text"
+                  type="tel"
                   value={newWorker.phone}
                   onChange={e => setNewWorker({ ...newWorker, phone: e.target.value })}
-                  placeholder="+994 XX XXX XX XX"
+                  placeholder="+994 __ __ __ __ __"
+                />
+              </div>
+              <div className="form-group">
+                <label>E-mail</label>
+                <input
+                  type="email"
+                  value={newWorker.email}
+                  onChange={e => setNewWorker({ ...newWorker, email: e.target.value })}
+                  placeholder="email@gmail.com"
                 />
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label>Komanda</label>
-                  <select
-                    value={newWorker.team}
-                    onChange={e => setNewWorker({ ...newWorker, team: e.target.value })}
-                  >
-                    <option>APM</option>
-                    <option>NOC</option>
-                    <option>SOC</option>
-                  </select>
+                  <label>Başlama Vaxtı</label>
+                  <input
+                    type="time"
+                    placeholder="--:-- --"
+                  />
                 </div>
                 <div className="form-group">
-                  <label>Status</label>
-                  <select
-                    value={newWorker.status}
-                    onChange={e => setNewWorker({ ...newWorker, status: e.target.value })}
-                  >
-                    <option>Əlçatandır</option>
-                    <option>Növbədə</option>
-                    <option>İstirahətdə</option>
-                  </select>
+                  <label>Bitma Vaxtı</label>
+                  <input
+                    type="time"
+                    placeholder="--:-- --"
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label>Komanda seç</label>
+                <div 
+                  ref={dropdownRef}
+                  className="custom-select"
+                  onClick={() => setShowTeamDropdown(!showTeamDropdown)}
+                >
+                  <div className={`select-display ${newWorker.team ? 'has-value' : ''}`}>
+                    {newWorker.team || 'Komanda seç'}
+                  </div>
+                  {showTeamDropdown && (
+                    <div className="select-dropdown">
+                      <div 
+                        className={`select-option ${newWorker.team === 'APM' ? 'selected' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setNewWorker({ ...newWorker, team: 'APM' });
+                          setShowTeamDropdown(false);
+                        }}
+                      >
+                        APM
+                      </div>
+                      <div 
+                        className={`select-option ${newWorker.team === 'NOC' ? 'selected' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setNewWorker({ ...newWorker, team: 'NOC' });
+                          setShowTeamDropdown(false);
+                        }}
+                      >
+                        NOC
+                      </div>
+                      <div 
+                        className={`select-option ${newWorker.team === 'SOC' ? 'selected' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setNewWorker({ ...newWorker, team: 'SOC' });
+                          setShowTeamDropdown(false);
+                        }}
+                      >
+                        SOC
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
             <div className="modal-footer">
               <button className="btn-cancel" onClick={() => setShowAddModal(false)}>Ləğv et</button>
               <button className="btn-confirm" onClick={handleAddWorker}>
-                <Plus size={16} />
                 Əlavə et
               </button>
             </div>

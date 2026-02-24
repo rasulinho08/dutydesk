@@ -1,4 +1,4 @@
-import { Calendar, Users, CheckCircle, XCircle, TrendingUp, TrendingDown } from "lucide-react";
+import { Calendar, Users, CheckCircle, XCircle, TrendingUp, TrendingDown, User, Search, Filter } from "lucide-react";
 import "./AdminStatistics.css";
 
 export default function AdminStatistics() {
@@ -49,6 +49,7 @@ export default function AdminStatistics() {
           <input type="date" defaultValue="2025-12-03" />
 
           <select>
+            <option>Bütün Komandalar</option>
             <option>NOC</option>
             <option>APM</option>
             <option>SOC</option>
@@ -56,7 +57,9 @@ export default function AdminStatistics() {
 
           <select>
             <option>Həftəlik</option>
+            <option>Günlük</option>
             <option>Aylıq</option>
+            <option>Custom</option>
           </select>
         </div>
       </div>
@@ -91,21 +94,30 @@ export default function AdminStatistics() {
             <h3>Növbə Tarixçəsi və Hesabatlar</h3>
             <p>Təhvil-təslim qeydləri və növbə məlumatları</p>
           </div>
-
-          <div className="export-buttons">
-            <button className="btn pdf">PDF Export</button>
-            <button className="btn excel">Excel Export</button>
-          </div>
         </div>
 
         <div className="filters-row">
-          <input placeholder="İşçi və ya qeyd axtar..." />
-          <select>
-            <option>Bütün Komandalar</option>
-          </select>
-          <select>
-            <option>Bu ay</option>
-          </select>
+          <div className="search-input-wrapper">
+            <Search size={18} className="search-icon" />
+            <input placeholder="İşçi və ya qeyd axtar..." />
+          </div>
+          <div className="team-filter-wrapper">
+            <Filter size={18} className="filter-icon" />
+            <select>
+              <option>Bütün Komandalar</option>
+              <option>APM</option>
+              <option>NOC</option>
+              <option>SOC</option>
+            </select>
+          </div>
+          <div className="date-filter-wrapper">
+            <Calendar size={18} className="calendar-icon" />
+            <select>
+              <option>Bu ay</option>
+              <option>Bu həftə</option>
+              <option>Bu il</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -122,7 +134,10 @@ export default function AdminStatistics() {
               <div className={`badge ${item.color}`}>{item.team}</div>
               <span className="shift-date-stat">2026-02-03 &nbsp; 09:00 - 17:00</span>
             </div>
-            <strong className="employee-name">Leyla Məmmədova</strong>
+            <div className="employee-info">
+              <User size={18} className="employee-icon" />
+              <strong className="employee-name">Leyla Məmmədova</strong>
+            </div>
           </div>
         ))}
       </div>

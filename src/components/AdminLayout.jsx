@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
-  LayoutDashboard, BarChart2, History, Calendar,
-  Users, LogOut, Menu, ChevronRight
+  LayoutGrid, FileText, Calendar,
+  Users, LogOut, Menu
 } from 'lucide-react'
 import Header from './Header'
 import './AdminLayout.css'
@@ -11,9 +11,8 @@ function AdminLayout({ children, onLogout }) {
   const [collapsed, setCollapsed] = useState(false)
 
   const menuItems = [
-    { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
-    // { path: '/admin/history', icon: History, label: 'History' },
-    { path: '/admin/statistics', icon: BarChart2, label: 'History' },
+    { path: '/admin', icon: LayoutGrid, label: 'Dashboard', exact: true },
+    { path: '/admin/statistics', icon: FileText, label: 'History' },
     { path: '/admin/schedule', icon: Calendar, label: 'Work schedule' },
     { path: '/admin/workers', icon: Users, label: 'Workers' }
   ]
@@ -37,11 +36,6 @@ function AdminLayout({ children, onLogout }) {
               <Menu size={20} />
             </button>
           </div>
-
-          {/* Collapse Toggle Button */}
-          <button className="collapse-toggle" onClick={() => setCollapsed(!collapsed)}>
-            <ChevronRight size={16} className={collapsed ? '' : 'rotated'} />
-          </button>
 
           <nav className="sidebar-nav">
             {menuItems.map(item => (

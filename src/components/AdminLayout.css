@@ -27,6 +27,10 @@
   flex-shrink: 0;
   transition: width 0.3s ease;
   position: relative;
+  height: 67vh;
+  margin: 16px;
+  margin-right: 0;
+  border-radius: 16px;
 }
 
 /* Collapsed State */
@@ -55,34 +59,6 @@
 .admin-sidebar.collapsed .logout-btn {
   padding: 14px;
   justify-content: center;
-}
-
-/* Collapse Toggle Button */
-.collapse-toggle {
-  position: absolute;
-  right: -12px;
-  top: 85px;
-  width: 24px;
-  height: 24px;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #1e5a8a;
-  cursor: pointer;
-  z-index: 10;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s;
-}
-
-.collapse-toggle:hover {
-  background: #f0f4f8;
-}
-
-.collapse-toggle .rotated {
-  transform: rotate(180deg);
 }
 
 .sidebar-header {

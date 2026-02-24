@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { 
   Bell, AlertTriangle, Clock, Users, Calendar, 
-  ChevronRight, Download, UserPlus, X, Check, Search,
+  ChevronRight, UserPlus, X, Check, Search,
   RefreshCw, Eye, Edit, Trash2, Activity, LogIn, LogOut,
   FileText, Zap, TrendingUp, UserCheck, AlertCircle, 
   Timer, CheckCircle2, XCircle, Phone, Mail
@@ -18,6 +18,7 @@ function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [currentTime, setCurrentTime] = useState(new Date())
+  const [timeDropdownOpen, setTimeDropdownOpen] = useState(null)
   
   // Real-time On-Duty Status
   const [onDutyNow, setOnDutyNow] = useState([
@@ -136,6 +137,17 @@ function AdminDashboard() {
     return () => clearInterval(timer)
   }, [])
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (timeDropdownOpen && !event.target.closest('.clickable-time')) {
+        setTimeDropdownOpen(null)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [timeDropdownOpen])
+
   const teams = [
     { name: 'APM', members: 3, color: '#1380AF', currentShift: '09:00-17:00', worker: 'Leyla Məmmədova', onShift: 1 },
     { name: 'NOC', members: 3, color: '#22c55e', currentShift: '09:00-17:00', worker: 'Rəşad İbrahimov', onShift: 1 },
@@ -170,9 +182,9 @@ function AdminDashboard() {
   ])
 
   const [upcomingShifts, setUpcomingShifts] = useState([
-    { id: 1, date: 'Sabah', fullDate: '12-01-2026', team: 'APM', time: '09:00-17:00', worker: 'Əli Quliyev', status: 'Planlaşdırılıb' },
-    { id: 2, date: 'Sabah', fullDate: '13-01-2026', team: 'NOC', time: '09:00-17:00', worker: 'Elvin Əliyev', status: 'Planlaşdırılıb' },
-    { id: 3, date: 'Sabah', fullDate: '12-01-2026', team: 'SOC', time: '09:00-17:00', worker: 'Elvin Əliyev', status: 'Boş' }
+    { id: 1, date: 'Sabah', fullDate: '12-01-2026', team: 'APM', time: '08:00 - 16:00', worker: 'Əli Quliyev', status: 'Planlaşdırılıb' },
+    { id: 2, date: 'Sabah', fullDate: '13-01-2026', team: 'NOC', time: '08:00 - 16:00', worker: 'Elvin Əliyev', status: 'Planlaşdırılıb' },
+    { id: 3, date: 'Sabah', fullDate: '12-01-2026', team: 'SOC', time: '16:00 - 00:00', worker: 'Elvin Əliyev', status: 'Boş' }
   ])
 
   const workers = [
@@ -227,8 +239,17 @@ function AdminDashboard() {
     setTimeout(() => setShowSuccessToast(false), 3000)
   }
 
-  const handleExport = () => {
-    showToast('Məlumatlar Excel formatında yüklənir...')
+  const timeOptions = [
+    '08:00 - 16:00',
+    '16:00 - 00:00',
+    '00:00 - 08:00'
+  ]
+
+  const handleTimeChange = (shiftId, newTime) => {
+    setUpcomingShifts(prev => prev.map(shift => 
+      shift.id === shiftId ? { ...shift, time: newTime } : shift
+    ))
+    setTimeDropdownOpen(null)
   }
 
   const handleChangeShift = (shiftId) => {
@@ -315,10 +336,6 @@ function AdminDashboard() {
               <UserPlus size={16} />
             </div>
             Növbə Təyin Et
-          </button>
-          <button className="btn-outline" onClick={handleExport}>
-            <Download size={16} />
-            Export
           </button>
         </div>
       </div>
@@ -418,9 +435,26 @@ function AdminDashboard() {
                     <span className={`team-badge-pill ${shift.team.toLowerCase()}-pill`}>{shift.team}</span>
                   </td>
                   <td>
-                    <div className="time-cell-new">
+                    <div 
+                      className="time-cell-new clickable-time" 
+                      onClick={() => setTimeDropdownOpen(timeDropdownOpen === shift.id ? null : shift.id)}
+                    >
+                      <ChevronRight size={14} className="dropdown-indicator" />
                       <Clock size={14} />
                       {shift.time}
+                      {timeDropdownOpen === shift.id && (
+                        <div className="time-dropdown" onClick={e => e.stopPropagation()}>
+                          {timeOptions.map((time, idx) => (
+                            <div 
+                              key={idx} 
+                              className={`time-option ${shift.time === time ? 'selected' : ''}`}
+                              onClick={() => handleTimeChange(shift.id, time)}
+                            >
+                              {time}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td>

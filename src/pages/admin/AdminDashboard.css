@@ -378,6 +378,76 @@
     font-size: 14px;
 }
 
+.clickable-time {
+    position: relative;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.clickable-time .dropdown-indicator {
+    color: #9ca3af;
+    transition: transform 0.2s;
+}
+
+.clickable-time:hover {
+    background: #f3f4f6;
+}
+
+.clickable-time:hover .dropdown-indicator {
+    color: #3b82f6;
+}
+
+.time-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    min-width: 150px;
+    overflow: hidden;
+    animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.time-option {
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.time-option:hover {
+    background: #f0f7ff;
+}
+
+.time-option.selected {
+    background: #3b82f6;
+    color: white;
+    font-weight: 500;
+}
+
+.time-option.selected:hover {
+    background: #2563eb;
+}
+
 .worker-cell-new {
     display: flex;
     align-items: center;
@@ -412,7 +482,7 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(4px);
+  /* backdrop-filter: blur(4px); */
 }
 
 .modal-content {
@@ -511,4 +581,88 @@
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* Time Filter - Shifts Table */
+.time-filter-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.time-filter-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.time-filter-display {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.time-filter-display:hover {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+}
+
+.column-header-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.time-filter-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 8px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-width: 150px;
+  z-index: 1000;
+  overflow: hidden;
+  animation: slideDown 0.2s ease;
+}
+
+.time-option {
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 14px;
+}
+
+.time-option:hover {
+  background: #f3f4f6;
+}
+
+.time-option.selected {
+  background: #1380af;
+  color: white;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Calendar, Plus, X, Check, RefreshCw, User, Clock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar, Plus, X, Check, RefreshCw, User, Clock, Search } from 'lucide-react'
 import './AdminSchedule.css'
 
 function AdminSchedule() {
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 0, 1))
+  const [currentDate, setCurrentDate] = useState(new Date(2026, 1, 1))
   const [selectedTeam, setSelectedTeam] = useState('Hamısı')
   const [showAddModal, setShowAddModal] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
@@ -12,6 +12,7 @@ function AdminSchedule() {
   const [isLoading, setIsLoading] = useState(true)
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
+  const [workerSearch, setWorkerSearch] = useState('')
 
   const [newShift, setNewShift] = useState({
     team: 'APM',
@@ -19,18 +20,66 @@ function AdminSchedule() {
     worker: ''
   })
 
+  const workers = [
+    { id: 1, name: 'Leyla Mammadova', email: 'leyla@company.az', team: 'APM', status: 'Növbədə' },
+    { id: 2, name: 'Əli Quliyev', email: 'ali@company.az', team: 'APM', status: 'Ölçələndir' },
+    { id: 3, name: 'Nigar Həmidova', email: 'nigar@company.az', team: 'APM', status: 'İstirahətdə' },
+    { id: 4, name: 'Rəşad İbrahimov', email: 'rashad@company.az', team: 'NOC', status: 'Əlçatandır' },
+    { id: 5, name: 'Aynur Əliyeva', email: 'aynur@company.az', team: 'NOC', status: 'Növbədə' },
+    { id: 6, name: 'Kamran Hüseynov', email: 'kamran@company.az', team: 'NOC', status: 'Əlçatandır' },
+    { id: 7, name: 'Nərmin Quliyeva', email: 'narmin@company.az', team: 'SOC', status: 'İstirahətdə' }
+  ]
+
+  const filteredWorkers = workers.filter(w => 
+    w.team === newShift.team && 
+    (w.name.toLowerCase().includes(workerSearch.toLowerCase()) || 
+     w.email.toLowerCase().includes(workerSearch.toLowerCase()))
+  )
+
+  const getStatusClass = (status) => {
+    return status.toLowerCase()
+      .replace(/ə/g, 'e')
+      .replace(/ö/g, 'o')
+      .replace(/ü/g, 'u')
+      .replace(/ı/g, 'i')
+      .replace(/ç/g, 'c')
+      .replace(/ş/g, 's')
+      .replace(/ğ/g, 'g')
+      .replace(/\s+/g, '')
+  }
+
   useEffect(() => {
     setTimeout(() => setIsLoading(false), 600)
   }, [])
 
-  const teams = ['Hamısı', 'APM', 'NOC', 'SOC']
+  const teams = ['APM', 'NOC', 'SOC']
 
   const [shifts, setShifts] = useState([
-    { id: 1, date: 13, team: 'APM', time: '09:00-17:00', worker: 'Leyla Mammadova', incomplete: true },
-    { id: 2, date: 15, team: 'NOC', time: '09:00-17:00', worker: 'Boşdur' },
-    { id: 3, date: 18, team: 'SOC', time: '09:00-17:00', worker: 'Kamran Hüseynov' },
-    { id: 4, date: 20, team: 'APM', time: '08:00-20:00', worker: 'Rəşad İbrahimov' },
-    { id: 5, date: 22, team: 'NOC', time: '20:00-08:00', worker: 'Aynur Əliyeva' }
+    // Day 1
+    { id: 1, date: 1, team: 'APM', time: '09:00-17:00', worker: 'Əli' },
+    { id: 2, date: 1, team: 'APM', time: '17:00-01:00', worker: 'Həsan' },
+    { id: 3, date: 1, team: 'APM', time: '01:00-09:00', worker: 'Leyla' },
+    // Day 2
+    { id: 4, date: 2, team: 'APM', time: '09:00-17:00', worker: 'Əli' },
+    { id: 5, date: 2, team: 'APM', time: '17:00-01:00', worker: 'Həsan' },
+    { id: 6, date: 2, team: 'APM', time: '01:00-09:00', worker: 'Leyla' },
+    // Day 3
+    { id: 7, date: 3, team: 'APM', time: '09:00-17:00', worker: 'Əli' },
+    { id: 8, date: 3, team: 'APM', time: '17:00-01:00', worker: 'Həsan' },
+    { id: 9, date: 3, team: 'APM', time: '01:00-09:00', worker: 'Leyla' },
+    // Day 5
+    { id: 10, date: 5, team: 'APM', time: '09:00-17:00', worker: 'Əli' },
+    { id: 11, date: 5, team: 'APM', time: '17:00-01:00', worker: 'Həsan' },
+    // Day 6
+    { id: 12, date: 6, team: 'APM', time: '09:00-17:00', worker: 'Əli' },
+    // Day 7
+    { id: 13, date: 7, team: 'APM', time: '09:00-17:00', worker: 'Əli' },
+    // Day 8
+    { id: 14, date: 8, team: 'APM', time: '09:00-17:00', worker: 'Əli' },
+    // Day 9
+    { id: 15, date: 9, team: 'APM', time: '09:00-17:00', worker: 'Əli' },
+    // Day 10
+    { id: 16, date: 10, team: 'APM', time: '09:00-17:00', worker: 'Əli' }
   ])
 
   const displayToast = (message) => {
@@ -68,10 +117,10 @@ function AdminSchedule() {
     return days
   }
 
-  const getShiftForDay = (day) => {
+  const getShiftsForDay = (day) => {
     const dayShifts = shifts.filter(s => s.date === day)
-    if (selectedTeam === 'Hamısı') return dayShifts[0]
-    return dayShifts.find(s => s.team === selectedTeam)
+    if (selectedTeam === 'Hamısı') return dayShifts
+    return dayShifts.filter(s => s.team === selectedTeam)
   }
 
   const prevMonth = () => {
@@ -84,14 +133,10 @@ function AdminSchedule() {
 
   const handleDayClick = (dayObj) => {
     if (!dayObj.currentMonth) return
-    const shift = getShiftForDay(dayObj.day)
-    if (shift) {
-      setSelectedShift(shift)
-      setShowDetailModal(true)
-    } else {
-      setSelectedDay(dayObj.day)
-      setShowAddModal(true)
-    }
+    setSelectedDay(dayObj.day)
+    setWorkerSearch('')
+    setNewShift({ team: 'APM', time: '08:00 - 20:00', worker: '' })
+    setShowAddModal(true)
   }
 
   const handleAddShift = () => {
@@ -106,7 +151,8 @@ function AdminSchedule() {
     }
     setShifts([...shifts, shift])
     setShowAddModal(false)
-    setNewShift({ team: 'APM', time: '09:00-17:00', worker: '' })
+    setWorkerSearch('')
+    setNewShift({ team: 'APM', time: '08:00 - 20:00', worker: '' })
     displayToast('Növbə əlavə edildi!')
   }
 
@@ -116,7 +162,7 @@ function AdminSchedule() {
     displayToast('Növbə silindi!')
   }
 
-  const monthNames = ['M01', 'M02', 'M03', 'M04', 'M05', 'M06', 'M07', 'M08', 'M09', 'M10', 'M11', 'M12']
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
   const dayNames = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
 
   if (isLoading) {
@@ -140,9 +186,26 @@ function AdminSchedule() {
 
       {/* Header */}
       <div className="schedule-header animate-fade-in">
-        <div className="month-display">
-          <Calendar size={20} />
-          <h1>{currentDate.getFullYear()} {monthNames[currentDate.getMonth()]}</h1>
+        <div className="left-section">
+          <div className="month-display">
+            <Calendar size={20} />
+            <h1>{monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</h1>
+          </div>
+          <div className="teams-legend">
+            <span className="legend-label">Teams:</span>
+            <div className="legend-item">
+              <span className="legend-dot noc"></span>
+              <span>NOC</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-dot soc"></span>
+              <span>SOC</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-dot apm"></span>
+              <span>APM</span>
+            </div>
+          </div>
         </div>
         <div className="header-controls">
           <div className="team-filters">
@@ -150,7 +213,7 @@ function AdminSchedule() {
               <button
                 key={team}
                 className={`team-btn ${selectedTeam === team ? 'active' : ''}`}
-                onClick={() => setSelectedTeam(team)}
+                onClick={() => setSelectedTeam(selectedTeam === team ? 'Hamısı' : team)}
               >
                 {team}
               </button>
@@ -158,10 +221,10 @@ function AdminSchedule() {
           </div>
           <div className="nav-buttons">
             <button className="nav-btn" onClick={prevMonth}>
-              <ChevronLeft size={20} />
+              <ChevronLeft size={18} />
             </button>
             <button className="nav-btn" onClick={nextMonth}>
-              <ChevronRight size={20} />
+              <ChevronRight size={18} />
             </button>
           </div>
         </div>
@@ -176,25 +239,30 @@ function AdminSchedule() {
         </div>
         <div className="calendar-grid">
           {getDaysInMonth(currentDate).map((dayObj, idx) => {
-            const shift = dayObj.currentMonth ? getShiftForDay(dayObj.day) : null
+            const dayShifts = dayObj.currentMonth ? getShiftsForDay(dayObj.day) : []
             return (
               <div
                 key={idx}
-                className={`calendar-day ${!dayObj.currentMonth ? 'other-month' : ''} ${shift ? 'has-shift' : ''}`}
+                className={`calendar-day ${!dayObj.currentMonth ? 'other-month' : ''} ${dayShifts.length > 0 ? 'has-shift' : ''}`}
                 onClick={() => handleDayClick(dayObj)}
               >
                 <span className="day-number">
                   {dayObj.day}
-                  {shift?.incomplete && <span className="incomplete-dot">●</span>}
                 </span>
-                {shift && (
-                  <div className={`shift-event ${shift.team.toLowerCase()}`}>
-                    <span className={`team-badge-pill-sc ${shift.team.toLowerCase()}-pill`}>{shift.team}</span>
-                    <div className='shift-time-cont'>
-                      <Clock size={16} color="grey" />
-                      <span className="shift-time-schd">{shift.time}</span>
-                    </div>
-                    <span className="shift-worker">{shift.worker}</span>
+                {dayShifts.length > 0 && (
+                  <div className="shifts-container">
+                    {dayShifts.map(shift => (
+                      <div key={shift.id} className={`shift-card ${shift.team.toLowerCase()}`}>
+                        <div className="shift-card-header">
+                          <span className="shift-worker-name">● {shift.worker}</span>
+                          <span className={`team-badge-mini ${shift.team.toLowerCase()}`}>{shift.team}</span>
+                        </div>
+                        <div className="shift-card-time">
+                          <Clock size={12} />
+                          <span>{shift.time}</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -203,83 +271,64 @@ function AdminSchedule() {
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="calendar-legend animate-fade-in">
-        <h4>Rəng Açıqlaması</h4>
-        <div className="legend-items">
-          <div className="legend-item">
-            <span className="legend-color apm"></span>
-            APM Komandası
-          </div>
-          <div className="legend-item">
-            <span className="legend-color noc"></span>
-            NOC Komandası
-          </div>
-          <div className="legend-item">
-            <span className="legend-color soc"></span>
-            SOC Komandası
-          </div>
-          <div className="legend-item">
-            <span className="legend-dot"></span>
-            Natamam
-          </div>
-        </div>
-      </div>
-
       {/* Add Shift Modal */}
       {showAddModal && (
         <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
-          <div className="modal-content animate-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Yeni Növbə Əlavə Et</h3>
-              <span>{currentDate.getFullYear()}-{monthNames[currentDate.getMonth()]}-{selectedDay}</span>
+          <div className="modal-content-assign animate-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header-assign">
+              <div>
+                <h3>Növbəyə işçi Tayin Et</h3>
+                <p className="modal-subtitle">Komanda: {newShift.team} • Vaxt: {newShift.time}</p>
+              </div>
               <button className="close-btn" onClick={() => setShowAddModal(false)}>
                 <X size={20} />
               </button>
             </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label>Komanda</label>
-                <select
-                  value={newShift.team}
-                  onChange={e => setNewShift({ ...newShift, team: e.target.value })}
-                >
-                  <option>APM</option>
-                  <option>NOC</option>
-                  <option>SOC</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Vaxt</label>
-                <select
-                  value={newShift.time}
-                  onChange={e => setNewShift({ ...newShift, time: e.target.value })}
-                >
-                  <option>09:00-17:00</option>
-                  <option>08:00-20:00</option>
-                  <option>20:00-08:00</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>İşçi</label>
-                <select
-                  value={newShift.worker}
-                  onChange={e => setNewShift({ ...newShift, worker: e.target.value })}
-                >
-                  <option value="">İşçi seçin...</option>
-                  <option>Leyla Mammadova</option>
-                  <option>Rəşad İbrahimov</option>
-                  <option>Aynur Əliyeva</option>
-                  <option>Kamran Hüseynov</option>
-                  <option>Nərmin Quliyeva</option>
-                </select>
-              </div>
+            
+            <div className="worker-search-box">
+              <Search size={18} className="search-icon" />
+              <input
+                type="text"
+                placeholder="İşçi axtar..."
+                value={workerSearch}
+                onChange={e => setWorkerSearch(e.target.value)}
+              />
             </div>
-            <div className="modal-footer">
-              <button className="btn-cancel" onClick={() => setShowAddModal(false)}>Ləğv et</button>
-              <button className="btn-confirm" onClick={handleAddShift}>
-                <Plus size={16} />
-                Əlavə et
+
+            <div className="workers-list">
+              {filteredWorkers.map(worker => (
+                <div 
+                  key={worker.id} 
+                  className={`worker-item ${newShift.worker === worker.name ? 'selected' : ''}`}
+                  onClick={() => setNewShift({ ...newShift, worker: worker.name })}
+                >
+                  <div className="worker-details">
+                    <h4>{worker.name}</h4>
+                    <p>{worker.email}</p>
+                    <div className="worker-meta">
+                      <span className={`status-badge-mini ${getStatusClass(worker.status)}`}>
+                        {worker.status}
+                      </span>
+                      <span className={`team-badge-mini ${worker.team.toLowerCase()}`}>
+                        {worker.team}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="modal-footer-assign">
+              <button className="btn-cancel-assign" onClick={() => setShowAddModal(false)}>
+                Ləğv et
+              </button>
+              <button 
+                className="btn-confirm-assign" 
+                onClick={handleAddShift}
+                disabled={!newShift.worker}
+              >
+                <Check size={16} />
+                Təyin Et
               </button>
             </div>
           </div>

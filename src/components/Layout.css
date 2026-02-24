@@ -66,35 +66,6 @@
   display: none;
 }
 
-/* Collapse Toggle Button */
-.collapse-toggle {
-  position: absolute;
-  right: -12px;
-  top: 85px;
-  width: 24px;
-  height: 24px;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #1e5a8a;
-  cursor: pointer;
-  z-index: 10;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-}
-
-.collapse-toggle:hover {
-  background: #f0f4f8;
-  transform: scale(1.1);
-}
-
-.collapse-toggle .rotated {
-  transform: rotate(180deg);
-}
-
 /* Sidebar Header */
 .sidebar-header {
   display: flex;

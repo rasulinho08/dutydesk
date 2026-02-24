@@ -22,13 +22,24 @@
   align-items: center;
 }
 
-.filters input,
+.filters input {
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  font-size: 14px;
+}
+
 .filters select {
   height: 38px;
   padding: 0 12px;
-  border-radius: 8px;
+  border-radius: 12px;
   border: 1px solid #e5e7eb;
   background: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  min-width: 120px;
 }
 
 .stat-grid {
@@ -72,7 +83,9 @@
 }
 
 .stat-change.red {
-  background: #FFADA7
+  background: #FFADA7;
+  color: #9F0712;
+  font-weight: 600;
 }
 
 .stat-change.purple {
@@ -113,6 +126,11 @@
 
 .stat-icon.red {
   background: #FFADA7
+}
+
+.stat-icon.red svg {
+  color: #9F0712;
+  stroke: #9F0712;
 }
 
 .stat-icon.purple {
@@ -223,86 +241,126 @@
   margin-bottom: 4px;
 }
 
-.export-buttons {
-  display: flex;
-  gap: 10px;
-}
-
-.btn {
-  height: 38px;
-  padding: 0 16px;
-  border-radius: 8px;
-  color: #fff;
-  border: none;
-  cursor: pointer;
-}
-
-.btn.pdf {
-  background: #1483B3;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.btn.excel {
-  background: #00A63E;
-  font-size: 20px;
-  font-weight: 600;
-}
-
 /* FILTER ROW */
 .filters-row {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   margin-top: 16px;
-  justify-content: space-between;
   font-size: 16px;
+  align-items: center;
 }
 
-.filters-row input,
-.filters-row select {
-  height: 38px;
-  padding: 0 12px;
-  border-radius: 8px;
-  width: 300px;
-  border: 1px solid #e5e7eb;
+.search-input-wrapper {
+  position: relative;
+  flex: 1;
 }
 
-.shift-item {
-  background: #f8fafc;
+.search-input-wrapper .search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.search-input-wrapper input {
+  height: 44px;
+  padding-left: 40px;
+  padding-right: 12px;
   border-radius: 12px;
-  padding: 14px 16px;
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  font-size: 14px;
+}
+
+.team-filter-wrapper {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-top: 12px;
+  flex: 1;
+  max-width: 280px;
+}
+
+.team-filter-wrapper .filter-icon {
+  position: absolute;
+  left: 12px;
+  color: #9ca3af;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.team-filter-wrapper select {
+  height: 44px;
+  padding-left: 40px;
+  padding-right: 12px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  font-size: 14px;
+  cursor: pointer;
+  background: white;
+  width: 100%;
+}
+
+.date-filter-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  max-width: 280px;
+}
+
+.date-filter-wrapper .calendar-icon {
+  position: absolute;
+  left: 12px;
+  color: #9ca3af;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.date-filter-wrapper select {
+  height: 44px;
+  padding-left: 40px;
+  padding-right: 12px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  font-size: 14px;
+  cursor: pointer;
+  background: white;
+  width: 100%;
+}
+
+.card-shifts {
+  padding: 20px;
+  border-radius: 16px;
+  background: #fff;
+  margin-bottom: 24px;
+}
+
+.card-shifts h3 {
+  font-size: 27px;
+  font-weight: 700;
+  margin-bottom: 16px;
 }
 
 .shift-date-stat {
   color: #6b7280;
   font-size: 14px;
-}
-
-.card-shifts {
-  padding: 16px;
-  border-radius: 8px;
-  background: #fff;
-  border-radius: 16px;
-  padding: 20px;
-  margin-bottom: 24px;
+  font-weight: 400;
 }
 
 .shift-item {
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #dad6d6;
-  background-color: #F5F7FA;
+  background: white;
+  border-radius: 16px;
+  padding: 18px 20px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  margin-bottom: 12px;
+  border: 1px solid #e5e7eb;
 }
 
 .shift-item:last-child {
-  border-bottom: none;
   margin-bottom: 0;
 }
 
@@ -310,31 +368,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  /* badge ilə tarix arasındakı məsafə */
   margin-bottom: 6px;
-  /* ad ilə yuxarı hissə arasındakı boşluq */
-}
-
-.badge {
-  padding: 5px 12px;
-  border-radius: 999px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: white;
-}
-
-.apm {
-  background: #007bff;
-}
-
-/* mavi */
-.noc {
-  background: #28a745;
-}
-
-/* yaşıl */
-.soc {
-  background: #6f42c1;
 }
 
 .shift-date {
@@ -344,28 +378,39 @@
 
 .employee-name {
   display: block;
-  color: #222;
-  font-size: 1.05rem;
+  color: #1a1a2e;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.employee-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.employee-icon {
+  color: #6b7280;
 }
 
 .badge {
   padding: 4px 12px;
   border-radius: 999px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .badge.apm {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: #3b82f6;
+  color: white;
 }
 
 .badge.noc {
-  background: #dcfce7;
-  color: #15803d;
+  background: #22c55e;
+  color: white;
 }
 
 .badge.soc {
-  background: #f3e8ff;
-  color: #7e22ce;
+  background: #a855f7;
+  color: white;
 }
