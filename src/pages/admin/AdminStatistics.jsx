@@ -1,7 +1,53 @@
-import { Calendar, Users, CheckCircle, XCircle, TrendingUp, TrendingDown, User, Search, Filter } from "lucide-react";
+import { Calendar, Users, CheckCircle, XCircle, TrendingUp, TrendingDown, User, Search, Filter, Download } from "lucide-react";
+import jsPDF from 'jspdf'
+import 'jspdf-autotable'
 import "./AdminStatistics.css";
 
 export default function AdminStatistics() {
+  
+  const handleExportPDF = () => {
+    const doc = new jsPDF()
+    
+    // Add title
+    doc.setFontSize(20)
+    doc.text('Umumi Statistika', 14, 20)
+    
+    // Add date
+    doc.setFontSize(10)
+    doc.text(`Tarix: ${new Date().toLocaleDateString('az-AZ')}`, 14, 28)
+    
+    // Add stats
+    doc.setFontSize(14)
+    doc.text('Statistik Melumatlar', 14, 40)
+    
+    const statsData = stats.map(stat => [
+      stat.title,
+      stat.value.toString(),
+      stat.change
+    ])
+    
+    doc.autoTable({
+      startY: 45,
+      head: [['Gostrici', 'Deyer', 'Deyisiklik']],
+      body: statsData,
+      styles: { 
+        font: 'helvetica',
+        fontSize: 10
+      },
+      headStyles: {
+        fillColor: [19, 128, 175],
+        textColor: 255,
+        fontStyle: 'bold'
+      },
+      alternateRowStyles: {
+        fillColor: [245, 245, 245]
+      }
+    })
+    
+    // Save PDF
+    doc.save(`statistika-${new Date().toLocaleDateString('az-AZ')}.pdf`)
+  }
+  
   const stats = [
     {
       title: "Ümumi Növbələr (Bu ay)",
@@ -94,6 +140,10 @@ export default function AdminStatistics() {
             <h3>Növbə Tarixçəsi və Hesabatlar</h3>
             <p>Təhvil-təslim qeydləri və növbə məlumatları</p>
           </div>
+          <button className="btn-export-stat" onClick={handleExportPDF}>
+            <Download size={16} />
+            PDF Export
+          </button>
         </div>
 
         <div className="filters-row">
@@ -108,14 +158,6 @@ export default function AdminStatistics() {
               <option>APM</option>
               <option>NOC</option>
               <option>SOC</option>
-            </select>
-          </div>
-          <div className="date-filter-wrapper">
-            <Calendar size={18} className="calendar-icon" />
-            <select>
-              <option>Bu ay</option>
-              <option>Bu həftə</option>
-              <option>Bu il</option>
             </select>
           </div>
         </div>

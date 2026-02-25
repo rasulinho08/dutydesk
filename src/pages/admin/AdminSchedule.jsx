@@ -144,6 +144,19 @@ function AdminSchedule() {
       displayToast('İşçi seçin!')
       return
     }
+    
+    // Check if shift already exists for same day, team, and time
+    const existingShift = shifts.find(s => 
+      s.date === selectedDay && 
+      s.team === newShift.team && 
+      s.time === newShift.time
+    )
+    
+    if (existingShift) {
+      displayToast(`❌ Bu növbə artıq doludur! ${newShift.team} komandası üçün ${newShift.time} növbəsinə ${existingShift.worker} təyin edilib.`)
+      return
+    }
+    
     const shift = {
       id: Date.now(),
       date: selectedDay,
@@ -153,7 +166,7 @@ function AdminSchedule() {
     setShowAddModal(false)
     setWorkerSearch('')
     setNewShift({ team: 'APM', time: '08:00 - 20:00', worker: '' })
-    displayToast('Növbə əlavə edildi!')
+    displayToast('✓ Növbə uğurla əlavə edildi!')
   }
 
   const handleDeleteShift = () => {
@@ -184,54 +197,56 @@ function AdminSchedule() {
         <span>{toastMessage}</span>
       </div>
 
-      {/* Header */}
-      <div className="schedule-header animate-fade-in">
-        <div className="left-section">
-          <div className="month-display">
-            <Calendar size={20} />
-            <h1>{monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</h1>
+      {/* Schedule Container with Border */}
+      <div className="schedule-container animate-fade-in">
+        {/* Header */}
+        <div className="schedule-header">
+          <div className="left-section">
+            <div className="month-display">
+              <Calendar size={20} />
+              <h1>{monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</h1>
+            </div>
+            <div className="teams-legend">
+              <span className="legend-label">Teams:</span>
+              <div className="legend-item">
+                <span className="legend-dot noc"></span>
+                <span>NOC</span>
+              </div>
+              <div className="legend-item">
+                <span className="legend-dot soc"></span>
+                <span>SOC</span>
+              </div>
+              <div className="legend-item">
+                <span className="legend-dot apm"></span>
+                <span>APM</span>
+              </div>
+            </div>
           </div>
-          <div className="teams-legend">
-            <span className="legend-label">Teams:</span>
-            <div className="legend-item">
-              <span className="legend-dot noc"></span>
-              <span>NOC</span>
+          <div className="header-controls">
+            <div className="team-filters">
+              {teams.map(team => (
+                <button
+                  key={team}
+                  className={`team-btn ${selectedTeam === team ? 'active' : ''}`}
+                  onClick={() => setSelectedTeam(selectedTeam === team ? 'Hamısı' : team)}
+                >
+                  {team}
+                </button>
+              ))}
             </div>
-            <div className="legend-item">
-              <span className="legend-dot soc"></span>
-              <span>SOC</span>
-            </div>
-            <div className="legend-item">
-              <span className="legend-dot apm"></span>
-              <span>APM</span>
-            </div>
-          </div>
-        </div>
-        <div className="header-controls">
-          <div className="team-filters">
-            {teams.map(team => (
-              <button
-                key={team}
-                className={`team-btn ${selectedTeam === team ? 'active' : ''}`}
-                onClick={() => setSelectedTeam(selectedTeam === team ? 'Hamısı' : team)}
-              >
-                {team}
+            <div className="nav-buttons">
+              <button className="nav-btn" onClick={prevMonth}>
+                <ChevronLeft size={18} />
               </button>
-            ))}
-          </div>
-          <div className="nav-buttons">
-            <button className="nav-btn" onClick={prevMonth}>
-              <ChevronLeft size={18} />
-            </button>
-            <button className="nav-btn" onClick={nextMonth}>
-              <ChevronRight size={18} />
-            </button>
+              <button className="nav-btn" onClick={nextMonth}>
+                <ChevronRight size={18} />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Calendar Grid */}
-      <div className="calendar-card animate-slide-in">
+        {/* Calendar Grid */}
+        <div className="calendar-card">
         <div className="calendar-header">
           {dayNames.map(day => (
             <div key={day} className="day-name">{day}</div>
@@ -269,6 +284,8 @@ function AdminSchedule() {
             )
           })}
         </div>
+      </div>
+      {/* End of Schedule Container */}
       </div>
 
       {/* Add Shift Modal */}

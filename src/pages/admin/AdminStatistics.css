@@ -42,6 +42,28 @@
   min-width: 120px;
 }
 
+.btn-export-stat {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: none;
+  background: #1483B3;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.btn-export-stat:hover {
+  background: #116a8f;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(20, 131, 179, 0.3);
+}
+
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

@@ -378,38 +378,44 @@
     font-size: 14px;
 }
 
-.clickable-time {
+/* Time Header Dropdown */
+.time-header-dropdown {
     position: relative;
-    cursor: pointer;
-    padding: 6px 10px;
-    border-radius: 6px;
-    transition: all 0.2s;
 }
 
-.clickable-time .dropdown-indicator {
-    color: #9ca3af;
+.time-header-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.time-header-cell:hover {
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.time-header-cell .dropdown-arrow {
     transition: transform 0.2s;
 }
 
-.clickable-time:hover {
-    background: #f3f4f6;
+.time-header-cell .dropdown-arrow.open {
+    transform: rotate(90deg);
 }
 
-.clickable-time:hover .dropdown-indicator {
-    color: #3b82f6;
-}
-
-.time-dropdown {
+.time-header-options {
     position: absolute;
-    top: 100%;
+    top: calc(100% + 8px);
     left: 0;
-    margin-top: 4px;
     background: white;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     z-index: 1000;
-    min-width: 150px;
+    min-width: 160px;
     overflow: hidden;
     animation: slideDown 0.2s ease;
 }

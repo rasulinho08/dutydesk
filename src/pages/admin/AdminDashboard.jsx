@@ -18,7 +18,34 @@ function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [currentTime, setCurrentTime] = useState(new Date())
-  const [timeDropdownOpen, setTimeDropdownOpen] = useState(null)
+  const [timeHeaderDropdown, setTimeHeaderDropdown] = useState(false)
+  const [selectedTimeFilter, setSelectedTimeFilter] = useState('Bütün vaxtlar')
+  
+  // Helper function to check if current time is within shift range
+  const isShiftActive = (timeRange) => {
+    const now = currentTime
+    const currentHour = now.getHours()
+    const currentMinute = now.getMinutes()
+    const currentTimeInMinutes = currentHour * 60 + currentMinute
+    
+    // Parse time range (e.g., "08:00 - 16:00" or "00:00 - 08:00")
+    const [start, end] = timeRange.split(' - ').map(t => {
+      const [hours, minutes] = t.split(':').map(Number)
+      return hours * 60 + minutes
+    })
+    
+    // Handle overnight shifts (e.g., 16:00 - 24:00 or 00:00 - 08:00)
+    if (end === 0 || end === 1440) {
+      // 16:00 - 24:00 case
+      return currentTimeInMinutes >= start
+    } else if (start > end) {
+      // Overnight shift that crosses midnight
+      return currentTimeInMinutes >= start || currentTimeInMinutes < end
+    } else {
+      // Normal shift within same day
+      return currentTimeInMinutes >= start && currentTimeInMinutes < end
+    }
+  }
   
   // Real-time On-Duty Status
   const [onDutyNow, setOnDutyNow] = useState([
@@ -139,27 +166,36 @@ function AdminDashboard() {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (timeDropdownOpen && !event.target.closest('.clickable-time')) {
-        setTimeDropdownOpen(null)
+      if (timeHeaderDropdown && !event.target.closest('.time-header-dropdown')) {
+        setTimeHeaderDropdown(false)
       }
     }
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [timeDropdownOpen])
+  }, [timeHeaderDropdown])
 
   const teams = [
     { name: 'APM', members: 3, color: '#1380AF', currentShift: '09:00-17:00', worker: 'Leyla Məmmədova', onShift: 1 },
     { name: 'NOC', members: 3, color: '#22c55e', currentShift: '09:00-17:00', worker: 'Rəşad İbrahimov', onShift: 1 },
     { name: 'SOC', members: 3, color: '#a855f7', currentShift: '09:00-17:00', worker: 'Günəl Həsənova', onShift: 1 }
   ]
+  
+  // Get current active shift for each team
+  const getActiveShiftInfo = (teamName) => {
+    const teamData = timelineData.find(t => t.team === teamName)
+    if (!teamData) return null
+    
+    const activeShift = teamData.shifts.find(s => s.active)
+    return activeShift || teamData.shifts[0] // fallback to first shift if none active
+  }
 
   const [timelineData, setTimelineData] = useState([
     { 
       team: 'APM', 
       shifts: [
         { time: '00:00 - 08:00', worker: 'Əli Məmmədov', color: '#e0e7ff' },
-        { time: '08:00 - 16:00', worker: 'Leyla Həsənova', color: '#1e5a8a', active: true },
+        { time: '08:00 - 16:00', worker: 'Leyla Həsənova', color: '#1e5a8a' },
         { time: '16:00 - 24:00', worker: 'Rəşad İsmayılov', color: '#e0e7ff' }
       ]
     },
@@ -167,7 +203,7 @@ function AdminDashboard() {
       team: 'NOC', 
       shifts: [
         { time: '00:00 - 08:00', worker: 'Əli Məmmədov', color: '#dcfce7' },
-        { time: '08:00 - 16:00', worker: 'Leyla Həsənova', color: '#22c55e', active: true },
+        { time: '08:00 - 16:00', worker: 'Leyla Həsənova', color: '#22c55e' },
         { time: '16:00 - 24:00', worker: 'Rəşad İsmayılov', color: '#dcfce7' }
       ]
     },
@@ -175,11 +211,32 @@ function AdminDashboard() {
       team: 'SOC', 
       shifts: [
         { time: '00:00 - 08:00', worker: 'Əli Məmmədov', color: '#f3e8ff' },
-        { time: '08:00 - 16:00', worker: 'Leyla Həsənova', color: '#a855f7', active: true },
+        { time: '08:00 - 16:00', worker: 'Leyla Həsənova', color: '#a855f7' },
         { time: '16:00 - 24:00', worker: 'Rəşad İsmayılov', color: '#f3e8ff' }
       ]
     }
   ])
+  
+  // Update active shifts based on current time
+  useEffect(() => {
+    const updateActiveShifts = () => {
+      setTimelineData(prevData => 
+        prevData.map(teamData => ({
+          ...teamData,
+          shifts: teamData.shifts.map(shift => ({
+            ...shift,
+            active: isShiftActive(shift.time)
+          }))
+        }))
+      )
+    }
+    
+    updateActiveShifts()
+    // Update every minute along with current time
+    const interval = setInterval(updateActiveShifts, 60000)
+    
+    return () => clearInterval(interval)
+  }, [currentTime])
 
   const [upcomingShifts, setUpcomingShifts] = useState([
     { id: 1, date: 'Sabah', fullDate: '12-01-2026', team: 'APM', time: '08:00 - 16:00', worker: 'Əli Quliyev', status: 'Planlaşdırılıb' },
@@ -240,17 +297,20 @@ function AdminDashboard() {
   }
 
   const timeOptions = [
+    'Bütün vaxtlar',
     '08:00 - 16:00',
     '16:00 - 00:00',
     '00:00 - 08:00'
   ]
 
-  const handleTimeChange = (shiftId, newTime) => {
-    setUpcomingShifts(prev => prev.map(shift => 
-      shift.id === shiftId ? { ...shift, time: newTime } : shift
-    ))
-    setTimeDropdownOpen(null)
+  const handleTimeFilterChange = (timeFilter) => {
+    setSelectedTimeFilter(timeFilter)
+    setTimeHeaderDropdown(false)
   }
+
+  const filteredShifts = selectedTimeFilter === 'Bütün vaxtlar' 
+    ? upcomingShifts 
+    : upcomingShifts.filter(shift => shift.time === selectedTimeFilter)
 
   const handleChangeShift = (shiftId) => {
     const shift = upcomingShifts.find(s => s.id === shiftId)
@@ -330,48 +390,43 @@ function AdminDashboard() {
       {/* Header Actions Row */}
       <div className="dashboard-actions-row">
         <h2>Komanda Statusu</h2>
-        <div className="header-buttons">
-          <button className="btn-primary" onClick={() => setShowAssignModal(true)}>
-            <div className="icon-circle">
-              <UserPlus size={16} />
-            </div>
-            Növbə Təyin Et
-          </button>
-        </div>
       </div>
 
       {/* Team Status */}
       <div className="team-status-section animate-fade-in">
         <div className="team-cards">
-          {teams.map((team, idx) => (
-            <div 
-              key={team.name} 
-              className={`team-card ${team.name.toLowerCase()}-card hover-lift`}
-              style={{ animationDelay: `${idx * 0.1}s` }}
-            >
-              <div className="card-header">
-                <div className={`team-icon-box ${team.name.toLowerCase()}-bg`}>
-                  <Users size={24} color="white" />
-                </div>
-                <div className="team-title-box">
-                  <h3>{team.name}</h3>
-                  <span className="member-count">{team.members} İşçi</span>
-                </div>
-                <span className="shift-badge">{team.onShift} növbədə</span>
-              </div>
-              
-              <div className="card-body">
-                <div className="current-shift-info">
-                  <div className="info-label">
-                    <Clock size={14} />
-                    <span>Cari Növbə</span>
+          {teams.map((team, idx) => {
+            const activeShift = getActiveShiftInfo(team.name)
+            return (
+              <div 
+                key={team.name} 
+                className={`team-card ${team.name.toLowerCase()}-card hover-lift`}
+                style={{ animationDelay: `${idx * 0.1}s` }}
+              >
+                <div className="card-header">
+                  <div className={`team-icon-box ${team.name.toLowerCase()}-bg`}>
+                    <Users size={24} color="white" />
                   </div>
-                  <div className="shift-time-text">{team.currentShift}</div>
-                  <div className="shift-worker-name">{team.worker}</div>
+                  <div className="team-title-box">
+                    <h3>{team.name}</h3>
+                    <span className="member-count">{team.members} İşçi</span>
+                  </div>
+                  <span className="shift-badge">{team.onShift} növbədə</span>
+                </div>
+                
+                <div className="card-body">
+                  <div className="current-shift-info">
+                    <div className="info-label">
+                      <Clock size={14} />
+                      <span>Cari Növbə</span>
+                    </div>
+                    <div className="shift-time-text">{activeShift?.time || team.currentShift}</div>
+                    <div className="shift-worker-name">{activeShift?.worker || team.worker}</div>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 
@@ -419,12 +474,33 @@ function AdminDashboard() {
               <tr>
                 <th>TARİX</th>
                 <th>KOMANDA</th>
-                <th>NÖVBƏ VAXTI</th>
+                <th className="time-header-dropdown">
+                  <div 
+                    className="time-header-cell" 
+                    onClick={() => setTimeHeaderDropdown(!timeHeaderDropdown)}
+                  >
+                    NÖVBƏ VAXTI
+                    <ChevronRight size={14} className={`dropdown-arrow ${timeHeaderDropdown ? 'open' : ''}`} />
+                    {timeHeaderDropdown && (
+                      <div className="time-header-options" onClick={e => e.stopPropagation()}>
+                        {timeOptions.map((time, idx) => (
+                          <div 
+                            key={idx} 
+                            className={`time-option ${selectedTimeFilter === time ? 'selected' : ''}`}
+                            onClick={() => handleTimeFilterChange(time)}
+                          >
+                            {time}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </th>
                 <th>TƏYİN EDİLMİŞ İŞÇİ</th>
               </tr>
             </thead>
             <tbody>
-              {upcomingShifts.map((shift, idx) => (
+              {filteredShifts.map((shift, idx) => (
                 <tr key={shift.id} style={{ animationDelay: `${idx * 0.05}s` }}>
                   <td>
                     <div className="date-cell-new">
@@ -435,26 +511,9 @@ function AdminDashboard() {
                     <span className={`team-badge-pill ${shift.team.toLowerCase()}-pill`}>{shift.team}</span>
                   </td>
                   <td>
-                    <div 
-                      className="time-cell-new clickable-time" 
-                      onClick={() => setTimeDropdownOpen(timeDropdownOpen === shift.id ? null : shift.id)}
-                    >
-                      <ChevronRight size={14} className="dropdown-indicator" />
+                    <div className="time-cell-new">
                       <Clock size={14} />
                       {shift.time}
-                      {timeDropdownOpen === shift.id && (
-                        <div className="time-dropdown" onClick={e => e.stopPropagation()}>
-                          {timeOptions.map((time, idx) => (
-                            <div 
-                              key={idx} 
-                              className={`time-option ${shift.time === time ? 'selected' : ''}`}
-                              onClick={() => handleTimeChange(shift.id, time)}
-                            >
-                              {time}
-                            </div>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   </td>
                   <td>

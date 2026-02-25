@@ -101,6 +101,15 @@
   opacity: 1;
 }
 
+/* Schedule Container with Border */
+.schedule-container {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
 /* Header */
 .schedule-header {
   display: flex;
@@ -230,11 +239,7 @@
 
 /* Calendar */
 .calendar-card {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  margin-bottom: 24px;
+  padding: 0;
 }
 
 .calendar-header {

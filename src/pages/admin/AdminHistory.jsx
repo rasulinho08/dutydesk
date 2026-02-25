@@ -3,6 +3,8 @@ import {
   Search, Filter, Calendar, Download, Eye, X, User, 
   FileText, Clock, ChevronDown, RefreshCw, Check
 } from 'lucide-react'
+import jsPDF from 'jspdf'
+import 'jspdf-autotable'
 import './AdminHistory.css'
 
 function AdminHistory() {
@@ -80,7 +82,51 @@ function AdminHistory() {
   }
 
   const handleExportPDF = () => {
-    displayToast('PDF formatında yüklənir...')
+    const doc = new jsPDF()
+    
+    // Add title
+    doc.setFontSize(18)
+    doc.text('Novbe Tarixcesi ve Hesabatlar', 14, 20)
+    
+    // Add date
+    doc.setFontSize(10)
+    doc.text(`Tarix: ${new Date().toLocaleDateString('az-AZ')}`, 14, 28)
+    doc.text(`Filter: ${selectedTeam} | ${selectedPeriod}`, 14, 34)
+    
+    // Prepare table data
+    const tableData = filteredRecords.map(record => [
+      record.date,
+      record.team,
+      record.worker,
+      record.time,
+      record.systemStatus.substring(0, 50) + '...',
+      record.submittedAt
+    ])
+    
+    // Add table
+    doc.autoTable({
+      startY: 40,
+      head: [['Tarix', 'Komanda', 'Isci', 'Novbe', 'Sistem Statusu', 'Tehvil Tarixi']],
+      body: tableData,
+      styles: { 
+        font: 'helvetica',
+        fontSize: 8,
+        cellPadding: 3
+      },
+      headStyles: {
+        fillColor: [19, 128, 175],
+        textColor: 255,
+        fontStyle: 'bold'
+      },
+      alternateRowStyles: {
+        fillColor: [245, 245, 245]
+      },
+      margin: { top: 40 }
+    })
+    
+    // Save PDF
+    doc.save(`novbe-tarixcesi-${new Date().toLocaleDateString('az-AZ')}.pdf`)
+    displayToast('PDF yuklendi!')
   }
 
   const handleExportExcel = () => {
@@ -88,7 +134,78 @@ function AdminHistory() {
   }
 
   const handleDownloadPDF = () => {
-    displayToast('Qeyd PDF olaraq yükləndi!')
+    if (!selectedRecord) return
+    
+    const doc = new jsPDF()
+    
+    // Add title
+    doc.setFontSize(18)
+    doc.text('Tehvil-Teslim Qeydi', 14, 20)
+    
+    // Add metadata
+    doc.setFontSize(11)
+    doc.text(`Komanda: ${selectedRecord.team}`, 14, 32)
+    doc.text(`Tarix: ${selectedRecord.date}`, 14, 40)
+    doc.text(`Novbe Vaxti: ${selectedRecord.time}`, 14, 48)
+    doc.text(`Isci: ${selectedRecord.worker}`, 14, 56)
+    doc.text(`Tehvil Tarixi: ${selectedRecord.submittedAt}`, 14, 64)
+    
+    // Add sections
+    let yPos = 76
+    
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Sistem Statusu:', 14, yPos)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    const statusLines = doc.splitTextToSize(selectedRecord.systemStatus, 180)
+    doc.text(statusLines, 14, yPos + 8)
+    yPos += statusLines.length * 6 + 12
+    
+    if (selectedRecord.incidents) {
+      doc.setFontSize(12)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Incident-ler:', 14, yPos)
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(10)
+      const incidentLines = doc.splitTextToSize(selectedRecord.incidents, 180)
+      doc.text(incidentLines, 14, yPos + 8)
+      yPos += incidentLines.length * 6 + 12
+    }
+    
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Tamamlanmis Tapsiriglar:', 14, yPos)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    const completedLines = doc.splitTextToSize(selectedRecord.completedTasks, 180)
+    doc.text(completedLines, 14, yPos + 8)
+    yPos += completedLines.length * 6 + 12
+    
+    if (selectedRecord.pendingTasks) {
+      doc.setFontSize(12)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Gozleyen Tapsiriglar:', 14, yPos)
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(10)
+      const pendingLines = doc.splitTextToSize(selectedRecord.pendingTasks, 180)
+      doc.text(pendingLines, 14, yPos + 8)
+      yPos += pendingLines.length * 6 + 12
+    }
+    
+    if (selectedRecord.notes) {
+      doc.setFontSize(12)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Elave Qeydler:', 14, yPos)
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(10)
+      const notesLines = doc.splitTextToSize(selectedRecord.notes, 180)
+      doc.text(notesLines, 14, yPos + 8)
+    }
+    
+    // Save PDF
+    doc.save(`tehvil-qeydi-${selectedRecord.team}-${selectedRecord.date}.pdf`)
+    displayToast('Qeyd PDF olaraq yuklendi!')
     setShowDetailModal(false)
   }
 

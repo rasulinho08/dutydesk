@@ -8,7 +8,6 @@ import './AdminWorkers.css'
 function AdminWorkers() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTeam, setSelectedTeam] = useState('Bütün Komandalar')
-  const [selectedStatus, setSelectedStatus] = useState('Bütün Statuslar')
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -69,8 +68,7 @@ function AdminWorkers() {
     const matchesSearch = worker.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       worker.email.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesTeam = selectedTeam === 'Bütün Komandalar' || worker.team === selectedTeam
-    const matchesStatus = selectedStatus === 'Bütün Statuslar' || worker.status === selectedStatus
-    return matchesSearch && matchesTeam && matchesStatus
+    return matchesSearch && matchesTeam
   })
 
   const displayToast = (message) => {
@@ -199,15 +197,6 @@ function AdminWorkers() {
             <option>APM</option>
             <option>NOC</option>
             <option>SOC</option>
-          </select>
-        </div>
-        <div className="filter-dropdown">
-          <Filter size={16} />
-          <select value={selectedStatus} onChange={e => setSelectedStatus(e.target.value)}>
-            <option>Bütün Statuslar</option>
-            <option>Növbədə</option>
-            <option>Əlçatandır</option>
-            <option>İstirahətdə</option>
           </select>
         </div>
       </div>
