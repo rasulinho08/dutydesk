@@ -7,7 +7,7 @@
 // ============================================
 // API Konfiqurasiyası
 // ============================================
-export const BASE_URL = "https://dutydesk-g3ma.onrender.com";
+export const BASE_URL = import.meta.env.VITE_API_URL || "https://dutydesk-g3ma.onrender.com";
 
 // ============================================
 // Növbə Tipləri
