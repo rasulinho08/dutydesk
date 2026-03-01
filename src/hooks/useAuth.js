@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { apiRequest } from '../utils/api'
 import { BASE_URL } from '../constants'
 
 const AuthContext = createContext(null)
@@ -11,6 +10,8 @@ export const AuthProvider = ({ children }) => {
 
   // Check if user is admin or supervisor
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPERVISOR'
+
+  console.log('[AUTH] BASE_URL =', BASE_URL)
 
   // Validate token and fetch user data on app load
   useEffect(() => {
@@ -57,9 +58,10 @@ export const AuthProvider = ({ children }) => {
 
   // Login function
   const login = async (email, password) => {
-    console.log('Submitting login', { email, apiBase: BASE_URL })
+    const loginUrl = `${BASE_URL}/api/auth/login`
+    console.log('[AUTH] login url:', loginUrl)
     try {
-      const res = await fetch(`${BASE_URL}/api/auth/login`, {
+      const res = await fetch(loginUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
