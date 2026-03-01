@@ -2,19 +2,21 @@
  * DutyDesk - Növbə İdarəetmə Sistemi
  * 
  * Əsas Application komponenti
- * - Login/Logout idarəetməsi
- * - Admin/User route-larının ayrılması
- * - Layout komponentlərinin təyin edilməsi
+ * - JWT token-based authentication
+ * - Backend API integration
+ * - Role-based route protection (ADMIN/SUPERVISOR/EMPLOYEE)
+ * - Automatic token validation on app load
  * 
  * @author DutyDesk Team
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { useState } from 'react'
+import { AuthProvider } from './hooks/useAuth'
+import { ProtectedRoute } from './components/ProtectedRoute'
 
 // ============================================
-// User Pages
+// Pages
 // ============================================
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -38,78 +40,79 @@ import AdminSchedule from './pages/admin/AdminSchedule'
 import AdminWorkers from './pages/admin/AdminWorkers'
 
 function App() {
-  // ============================================
-  // Authentication State
-  // ============================================
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [isAdmin, setIsAdmin] = useState(false)
-
-  /**
-   * Login handler
-   * Admin credentials: admin123@example.com / admin123
-   * Regular user: any other email/password
-   */
-  const handleLogin = (email, password) => {
-    // TODO: Backend API call əvəzinə mock data
-    if (email === 'admin123@example.com' && password === 'admin123') {
-      setIsAdmin(true)
-      setIsAuthenticated(true)
-    } else {
-      setIsAdmin(false)
-      setIsAuthenticated(true)
-    }
-  }
-
-  /**
-   * Logout handler
-   * Bütün auth state-ləri sıfırlayır
-   */
-  const handleLogout = () => {
-    setIsAuthenticated(false)
-    setIsAdmin(false)
-  }
-
-  // ============================================
-  // Unauthenticated - Login Page
-  // ============================================
-  if (!isAuthenticated) {
-    return <Login onLogin={handleLogin} />
-  }
-
-  // ============================================
-  // Admin Panel Routes
-  // ============================================
-  if (isAdmin) {
-    return (
-      <Router>
-        <AdminLayout onLogout={handleLogout}>
-          <Routes>
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/statistics" element={<AdminStatistics />} />
-            <Route path="/admin/history" element={<AdminHistory />} />
-            <Route path="/admin/schedule" element={<AdminSchedule />} />
-            <Route path="/admin/workers" element={<AdminWorkers />} />
-            <Route path="*" element={<Navigate to="/admin" replace />} />
-          </Routes>
-        </AdminLayout>
-      </Router>
-    )
-  }
-
-  // ============================================
-  // Regular User Panel Routes
-  // ============================================
   return (
     <Router>
-      <Layout onLogout={handleLogout}>
+      <AuthProvider>
         <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/my-shifts" element={<MyShifts />} />
-          <Route path="/handover-form" element={<HandoverForm />} />
-          <Route path="/handover-history" element={<HandoverHistory />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* Public Route - Login */}
+          <Route path="/login" element={<Login />} />
+
+          {/* Admin Routes - Protected (ADMIN/SUPERVISOR only) */}
+          <Route
+            path="/admin/*"
+            element={
+              <ProtectedRoute requireAdmin={true}>
+                <AdminLayout>
+                  <Routes>
+                    <Route path="/" element={<AdminDashboard />} />
+                    <Route path="/statistics" element={<AdminStatistics />} />
+                    <Route path="/history" element={<AdminHistory />} />
+                    <Route path="/schedule" element={<AdminSchedule />} />
+                    <Route path="/workers" element={<AdminWorkers />} />
+                    <Route path="*" element={<Navigate to="/admin" replace />} />
+                  </Routes>
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Employee Routes - Protected (EMPLOYEE only) */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Dashboard />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-shifts"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <MyShifts />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/handover-form"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <HandoverForm />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/handover-history"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <HandoverHistory />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Default redirect */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
-      </Layout>
+      </AuthProvider>
     </Router>
   )
 }

@@ -4,10 +4,12 @@ import {
   LayoutGrid, FileText, Calendar,
   Users, LogOut, Menu
 } from 'lucide-react'
+import { useAuth } from '../hooks/useAuth'
 import Header from './Header'
 import './AdminLayout.css'
 
-function AdminLayout({ children, onLogout }) {
+function AdminLayout({ children }) {
+  const { logout, user } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
 
   const menuItems = [
@@ -54,15 +56,17 @@ function AdminLayout({ children, onLogout }) {
 
           <div className="sidebar-footer">
             <div className="user-info">
-              <div className="user-avatar">VƏ</div>
+              <div className="user-avatar">
+                {user?.fullName?.substring(0, 2).toUpperCase() || 'AD'}
+              </div>
               {!collapsed && (
                 <div className="user-details">
-                  <span className="user-name">Vüsal Əliyev</span>
-                  <span className="user-role">Administrator</span>
+                  <span className="user-name">{user?.fullName || 'Admin'}</span>
+                  <span className="user-role">{user?.role || 'Administrator'}</span>
                 </div>
               )}
             </div>
-            <button className="logout-btn" onClick={onLogout}>
+            <button className="logout-btn" onClick={logout}>
               <LogOut size={18} />
               {!collapsed && 'Exit'}
             </button>

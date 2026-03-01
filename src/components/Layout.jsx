@@ -8,10 +8,12 @@ import {
   LogOut,
   Menu
 } from 'lucide-react'
+import { useAuth } from '../hooks/useAuth'
 import Header from './Header'
 import './Layout.css'
 
-function Layout({ children, onLogout }) {
+function Layout({ children }) {
+  const { logout, user } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
 
   const menuItems = [
@@ -59,15 +61,17 @@ function Layout({ children, onLogout }) {
 
           <div className="sidebar-footer">
             <div className="user-info">
-              <div className="user-avatar">VƏ</div>
+              <div className="user-avatar">
+                {user?.fullName?.substring(0, 2).toUpperCase() || 'US'}
+              </div>
               {!collapsed && (
                 <div className="user-details">
-                  <span className="user-name">Vüsal Əliyev</span>
-                  <span className="user-role">Employee</span>
+                  <span className="user-name">{user?.fullName || 'User'}</span>
+                  <span className="user-role">{user?.role || 'Employee'}</span>
                 </div>
               )}
             </div>
-            <button className="logout-btn" onClick={onLogout}>
+            <button className="logout-btn" onClick={logout}>
               <LogOut size={18} />
               {!collapsed && 'Exit'}
             </button>

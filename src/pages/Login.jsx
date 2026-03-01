@@ -1,11 +1,29 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Lock, Mail, Eye, EyeOff, ArrowLeft, Key, Shield, CheckCircle } from 'lucide-react'
+import { useAuth } from '../hooks/useAuth'
 import './Login.css'
 
-function Login({ onLogin }) {
+function Login() {
+  const navigate = useNavigate()
+  const { login, isAuthenticated, isAdmin } = useAuth()
+  
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState('')
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      if (isAdmin) {
+        navigate('/admin', { replace: true })
+      } else {
+        navigate('/dashboard', { replace: true })
+      }
+    }
+  }, [isAuthenticated, isAdmin, navigate])
 
   // Forgot Password States
   const [step, setStep] = useState('login') // login, forgot, verify, newPassword, success
@@ -29,9 +47,31 @@ function Login({ onLogin }) {
     }
   }, [resendTimer])
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    onLogin(email, password)
+    console.log('Submitting login', { email })
+    setError('')
+    setIsLoggingIn(true)
+
+    try {
+      const result = await login(email, password)
+
+      if (result.success) {
+        // Redirect based on user role
+        if (result.user.role === 'ADMIN' || result.user.role === 'SUPERVISOR') {
+          navigate('/admin', { replace: true })
+        } else {
+          navigate('/dashboard', { replace: true })
+        }
+      } else {
+        setError(result.message || 'Giriş uğursuz oldu')
+      }
+    } catch (error) {
+      console.error('Login error:', error)
+      setError('Şəbəkə xətası. Zəhmət olmasa yenidən cəhd edin.')
+    } finally {
+      setIsLoggingIn(false)
+    }
   }
 
   // Password strength calculator
@@ -139,6 +179,20 @@ function Login({ onLogin }) {
           <h1 className="login-title">Xoş Gəlmisiniz</h1>
           <p className="login-subtitle">Hesabınıza daxil olun</p>
 
+          {error && (
+            <div style={{
+              padding: '12px',
+              marginBottom: '16px',
+              backgroundColor: '#fee2e2',
+              border: '1px solid #ef4444',
+              borderRadius: '8px',
+              color: '#dc2626',
+              fontSize: '14px'
+            }}>
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="login-form">
             <div className="form-group">
               <label htmlFor="email">Email</label>
@@ -150,6 +204,8 @@ function Login({ onLogin }) {
                   placeholder="email@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={isLoggingIn}
                 />
               </div>
             </div>
@@ -169,19 +225,22 @@ function Login({ onLogin }) {
                   placeholder="••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={isLoggingIn}
                 />
                 <button
                   type="button"
                   className="password-toggle"
                   onClick={() => setShowPassword(!showPassword)}
+                  disabled={isLoggingIn}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
 
-            <button type="submit" className="login-button">
-              Daxil ol
+            <button type="submit" className="login-button" disabled={isLoggingIn}>
+              {isLoggingIn ? 'Giriş edilir...' : 'Daxil ol'}
             </button>
           </form>
         </div>
