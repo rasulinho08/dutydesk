@@ -9,7 +9,7 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   // Check if user is admin or supervisor
-  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPERVISOR'
+  const isAdmin = user?.role === 'admin' || user?.role === 'supervisor'
 
   console.log('[AUTH] BASE_URL =', BASE_URL)
 
@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const validateToken = async () => {
       const token = localStorage.getItem('token')
-      
+
       if (!token) {
         setIsLoading(false)
         return

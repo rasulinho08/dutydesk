@@ -7,7 +7,7 @@ import './Login.css'
 function Login() {
   const navigate = useNavigate()
   const { login, isAuthenticated, isAdmin } = useAuth()
-  
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -58,7 +58,7 @@ function Login() {
 
       if (result.success) {
         // Redirect based on user role
-        if (result.user.role === 'ADMIN' || result.user.role === 'SUPERVISOR') {
+        if (result.user.role === 'admin' || result.user.role === 'supervisor') {
           navigate('/admin', { replace: true })
         } else {
           navigate('/dashboard', { replace: true })

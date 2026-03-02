@@ -18,7 +18,7 @@ function useToast(duration = 3000) {
 
   const showToast = useCallback((message, type = 'success') => {
     setToast({ show: true, message, type })
-    
+
     setTimeout(() => {
       setToast(prev => ({ ...prev, show: false }))
     }, duration)
