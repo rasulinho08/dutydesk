@@ -6,6 +6,8 @@ import {
 import './AdminWorkers.css'
 
 function AdminWorkers() {
+  const [workers, setWorkers] = useState([])
+  const [error, setError] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTeam, setSelectedTeam] = useState('Bütün Komandalar')
   const [showAddModal, setShowAddModal] = useState(false)
@@ -19,119 +21,252 @@ function AdminWorkers() {
   const [showTeamDropdown, setShowTeamDropdown] = useState(false)
 
   const dropdownRef = useRef(null)
+  const [teams, setTeams] = useState([]);
 
+  useEffect(() => {
+    const fetchTeams = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('https://dutydesk-g3ma.onrender.com/api/admin/teams', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        const json = await res.json();
+        if (json.success) {
+          setTeams(json.data);
+        }
+      } catch (err) {
+        console.error("Komandalar yüklənmədi", err);
+      }
+    };
+    fetchTeams();
+  }, []);
   const [newWorker, setNewWorker] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
-    team: '',
-    status: 'Əlçatandır'
-  })
-
+    password: '',
+    teamId: '',
+    role: 'employee'
+  });
   useEffect(() => {
-    setTimeout(() => setIsLoading(false), 600)
-  }, [])
+    const fetchWorkers = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowTeamDropdown(false)
+        const token = localStorage.getItem('token')
+
+        const response = await fetch(
+          'https://dutydesk-g3ma.onrender.com/api/admin/users?page=1&limit=50',
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token && { 'Authorization': `Bearer ${token}` }),
+            },
+          }
+        )
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error('Giriş etmək lazımdır (401)')
+          }
+          throw new Error(`Server xətası: ${response.status}`)
+        }
+
+        const result = await response.json()
+
+        if (!result.success) {
+          throw new Error(result.message || 'API xətası')
+        }
+
+        const mappedEmployees = result.data.users
+          .filter(user =>
+            user.role === 'employee' &&
+            user.isActive === true
+          )
+          .map(user => ({
+            id: user.id,
+            name: `${user.firstName}${user.lastName ? ' ' + user.lastName : ''}`.trim(),
+            email: user.email,
+            phone: user.phone || '+994 XX XXX XX XX',
+            team: user.team?.name?.replace(/ Team$/i, '') || 'Digər',
+            status: 'Əlçatandır'
+          }))
+
+        setWorkers(mappedEmployees)
+      } catch (err) {
+        console.error('Fetch xətası:', err)
+        setError(err.message || 'İşçilər yüklənə bilmədi')
+      } finally {
+        setIsLoading(false)
       }
     }
 
+    fetchWorkers()
+  }, [])
+
+  // Dropdown xaricə klik → bağlanır
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setShowTeamDropdown(false)
+      }
+    }
     if (showTeamDropdown) {
       document.addEventListener('mousedown', handleClickOutside)
     }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showTeamDropdown])
 
-  const [workers, setWorkers] = useState([
-    { id: 1, name: 'Leyla Mammadova', email: 'leyla@company.az', phone: '+994 50 123 45 67', team: 'APM', status: 'Növbədə' },
-    { id: 2, name: 'Rəşad İbrahimov', email: 'rashad@company.az', phone: '+994 50 234 56 78', team: 'APM', status: 'Əlçatandır' },
-    { id: 3, name: 'Aynur Əliyeva', email: 'aynur@company.az', phone: '+994 50 345 67 89', team: 'NOC', status: 'İstirahətdə' },
-    { id: 4, name: 'Kamran Hüseynov', email: 'kamran@company.az', phone: '+994 50 456 78 90', team: 'NOC', status: 'Növbədə' },
-    { id: 5, name: 'Nərmin Quliyeva', email: 'narmin@company.az', phone: '+994 50 567 89 01', team: 'SOC', status: 'Əlçatandır' },
-    { id: 6, name: 'Tural Məmmədov', email: 'tural@company.az', phone: '+994 50 678 90 12', team: 'SOC', status: 'Əlçatandır' }
-  ])
-
-  const stats = [
-    { label: 'Ümumi İşçi', value: workers.length, icon: Users, color: '#155DFC' },
-    { label: 'APM Komandası', sublabel: `${workers.filter(w => w.team === 'APM' && w.status === 'Növbədə').length} növbədə`, value: workers.filter(w => w.team === 'APM').length, bg: '#1380AF' },
-    { label: 'NOC Komandası', sublabel: `${workers.filter(w => w.team === 'NOC' && w.status === 'Növbədə').length} növbədə`, value: workers.filter(w => w.team === 'NOC').length, bg: '#1D984B' },
-    { label: 'SOC Komandası', sublabel: `${workers.filter(w => w.team === 'SOC' && w.status === 'Növbədə').length} növbədə`, value: workers.filter(w => w.team === 'SOC').length, bg: '#7F38B2' }
-  ]
-
-  const filteredWorkers = workers.filter(worker => {
-    const matchesSearch = worker.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      worker.email.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesTeam = selectedTeam === 'Bütün Komandalar' || worker.team === selectedTeam
-    return matchesSearch && matchesTeam
-  })
-
-  const displayToast = (message) => {
-    setToastMessage(message)
+  // Toast göstərmə
+  const displayToast = (msg) => {
+    setToastMessage(msg)
     setShowToast(true)
     setTimeout(() => setShowToast(false), 3000)
   }
 
-  const handleAddWorker = () => {
-    if (!newWorker.name || !newWorker.email) {
-      displayToast('Ad və email daxil edin!')
-      return
+  // Filtrlənmiş işçilər
+  const filteredWorkers = workers.filter(w => {
+    const searchMatch =
+      w.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      w.email.toLowerCase().includes(searchQuery.toLowerCase())
+    const teamMatch = selectedTeam === 'Bütün Komandalar' || w.team === selectedTeam
+    return searchMatch && teamMatch
+  })
+
+  // Stats
+  const getTeamStats = (teamName) => {
+    const teamWorkers = workers.filter(w => w.team === teamName)
+    const onDuty = teamWorkers.filter(w => w.status === 'Növbədə').length
+    return {
+      label: `${teamName} Komandası`,
+      sublabel: `${onDuty} növbədə`,
+      value: teamWorkers.length,
     }
-    const worker = {
-      id: Date.now(),
-      ...newWorker
-    }
-    setWorkers([...workers, worker])
-    setShowAddModal(false)
-    setNewWorker({ name: '', email: '', phone: '', team: 'APM', status: 'Əlçatandır' })
-    displayToast('İşçi uğurla əlavə edildi!')
   }
 
+  const stats = [
+    { label: 'Ümumi İşçi', value: workers.length, color: '#155DFC' },
+    { ...getTeamStats('APM'), bg: '#1380AF' },
+    { ...getTeamStats('NOC'), bg: '#1D984B' },
+    { ...getTeamStats('SOC'), bg: '#7F38B2' },
+  ]
+
+
+  const handleAddWorker = async () => {
+    if (!newWorker.firstName.trim() || !newWorker.lastName.trim()) {
+      displayToast('Ad və soyad daxil edilməlidir!');
+      return;
+    }
+    if (!newWorker.email.trim()) {
+      displayToast('Email mütləqdir!');
+      return;
+    }
+    if (!newWorker.phone || !/^\d{9}$/.test(newWorker.phone)) {
+      displayToast('Telefon nömrəsi düzgün 9 rəqəm olmalıdır (məsələn: 501234567)');
+      return;
+    }
+    if (!newWorker.password || newWorker.password.length < 6) {
+      displayToast('Şifrə ən azı 6 simvol olmalıdır!');
+      return;
+    }
+    if (!newWorker.teamId) {
+      displayToast('Komanda seçilməlidir!');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+
+      const response = await fetch('https://dutydesk-g3ma.onrender.com/api/admin/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+
+        body: JSON.stringify({
+          firstName: newWorker.firstName.trim(),
+          lastName: newWorker.lastName.trim(),
+          email: newWorker.email.trim(),
+          phone: `+994${newWorker.phone}`,
+          password: newWorker.password,
+          role: 'employee',
+          teamId: newWorker.teamId,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'İşçi əlavə edilə bilmədi');
+      }
+
+      // Uğurlu olduqda
+      displayToast('İşçi uğurla əlavə edildi!');
+
+      // Modalı bağla
+      setShowAddModal(false);
+
+      // Formu sıfırla
+      setNewWorker({
+        firstName: '', lastName: '', email: '', phone: '', password: '', teamId: '', role: 'EMPLOYEE'
+      });
+
+      // Siyahını yenilə 
+      window.location.reload();
+
+    } catch (err) {
+      console.error('Əlavə xətası:', err);
+      displayToast(err.message || 'Xəta baş verdi');
+    }
+  };
+
   const handleEditWorker = () => {
-    setWorkers(workers.map(w => w.id === selectedWorker.id ? selectedWorker : w))
+    if (!selectedWorker) return
+    setWorkers(prev =>
+      prev.map(w => (w.id === selectedWorker.id ? { ...selectedWorker } : w))
+    )
     setShowEditModal(false)
-    displayToast('İşçi məlumatları yeniləndi!')
+    displayToast('Məlumatlar yeniləndi!')
   }
 
   const handleDeleteWorker = () => {
-    setWorkers(workers.filter(w => w.id !== selectedWorker.id))
+    if (!selectedWorker) return
+    setWorkers(prev => prev.filter(w => w.id !== selectedWorker.id))
     setShowDeleteModal(false)
     displayToast('İşçi silindi!')
   }
 
-  const openEditModal = (worker) => {
+
+  const getAvatarColor = team => {
+    const colors = { APM: '#1380AF', NOC: '#1D984B', SOC: '#7F38B2' }
+    return colors[team] || '#1e5a8a'
+  }
+
+  const getStatusColor = status => {
+    const styles = {
+      'Növbədə': { bg: '#dbeafe', color: '#1e40af' },
+      'Əlçatandır': { bg: '#dcfce7', color: '#166534' },
+      'İstirahətdə': { bg: '#f3f4f6', color: '#4b5563' },
+      'Deaktiv': { bg: '#fee2e2', color: '#991b1b' },
+    }
+    return styles[status] || { bg: '#f3f4f6', color: '#6b7280' }
+  }
+
+  const openEditModal = worker => {
     setSelectedWorker({ ...worker })
     setShowEditModal(true)
     setActiveDropdown(null)
   }
 
-  const openDeleteModal = (worker) => {
+  const openDeleteModal = worker => {
     setSelectedWorker(worker)
     setShowDeleteModal(true)
     setActiveDropdown(null)
-  }
-
-  const getAvatarColor = (team) => {
-    switch (team) {
-      case 'APM': return '#1380AF'
-      case 'NOC': return '#1D984B'
-      case 'SOC': return '#7F38B2'
-      default: return '#1e5a8a'
-    }
-  }
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Növbədə': return { bg: '#dbeafe', color: '#1e5a8a' }
-      case 'Əlçatandır': return { bg: '#dcfce7', color: '#16a34a' }
-      case 'İstirahətdə': return { bg: '#f3f4f6', color: '#6b7280' }
-      default: return { bg: '#f3f4f6', color: '#6b7280' }
-    }
   }
 
   if (isLoading) {
@@ -288,93 +423,80 @@ function AdminWorkers() {
             </div>
             <div className="modal-body">
               <div className="form-group">
-                <label>İşçi Adı və Soyadı</label>
+                <label>Ad</label>
                 <input
                   type="text"
-                  value={newWorker.name}
-                  onChange={e => setNewWorker({ ...newWorker, name: e.target.value })}
-                  placeholder="Ad Soyad"
+                  value={newWorker.firstName}
+                  onChange={e => setNewWorker({ ...newWorker, firstName: e.target.value })}
+                  placeholder="Ad"
                 />
               </div>
+
               <div className="form-group">
-                <label>Telefon</label>
+                <label>Soyad</label>
                 <input
-                  type="tel"
-                  value={newWorker.phone}
-                  onChange={e => setNewWorker({ ...newWorker, phone: e.target.value })}
-                  placeholder="+994 __ __ __ __ __"
+                  type="text"
+                  value={newWorker.lastName}
+                  onChange={e => setNewWorker({ ...newWorker, lastName: e.target.value })}
+                  placeholder="Soyad"
                 />
               </div>
+
               <div className="form-group">
                 <label>E-mail</label>
                 <input
                   type="email"
                   value={newWorker.email}
                   onChange={e => setNewWorker({ ...newWorker, email: e.target.value })}
-                  placeholder="email@gmail.com"
+                  placeholder="email@company.az"
                 />
               </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Başlama Vaxtı</label>
+
+              <div className="form-group">
+                <label>Telefon nömrəsi</label>
+                <div className="phone-input-container">
+                  <div className="phone-prefix">+994</div>
                   <input
-                    type="time"
-                    placeholder="--:-- --"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Bitma Vaxtı</label>
-                  <input
-                    type="time"
-                    placeholder="--:-- --"
+                    type="tel"
+                    className="phone-input"
+                    value={newWorker.phone}
+                    onChange={(e) => {
+                      let val = e.target.value.replace(/[^0-9]/g, '');
+                      if (val.length > 9) val = val.slice(0, 9);
+                      setNewWorker({ ...newWorker, phone: val });
+                    }}
+                    placeholder="501234567"
+                    maxLength={9}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="tel-national"
                   />
                 </div>
               </div>
+
               <div className="form-group">
-                <label>Komanda seç</label>
-                <div 
-                  ref={dropdownRef}
-                  className="custom-select"
-                  onClick={() => setShowTeamDropdown(!showTeamDropdown)}
+                <label>Şifrə</label>
+                <input
+                  type="password"
+                  value={newWorker.password}
+                  onChange={e => setNewWorker({ ...newWorker, password: e.target.value })}
+                  placeholder="********"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Komanda</label>
+                <select
+                  value={newWorker.teamId}
+                  onChange={e => setNewWorker({ ...newWorker, teamId: e.target.value })}
                 >
-                  <div className={`select-display ${newWorker.team ? 'has-value' : ''}`}>
-                    {newWorker.team || 'Komanda seç'}
-                  </div>
-                  {showTeamDropdown && (
-                    <div className="select-dropdown">
-                      <div 
-                        className={`select-option ${newWorker.team === 'APM' ? 'selected' : ''}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setNewWorker({ ...newWorker, team: 'APM' });
-                          setShowTeamDropdown(false);
-                        }}
-                      >
-                        APM
-                      </div>
-                      <div 
-                        className={`select-option ${newWorker.team === 'NOC' ? 'selected' : ''}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setNewWorker({ ...newWorker, team: 'NOC' });
-                          setShowTeamDropdown(false);
-                        }}
-                      >
-                        NOC
-                      </div>
-                      <div 
-                        className={`select-option ${newWorker.team === 'SOC' ? 'selected' : ''}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setNewWorker({ ...newWorker, team: 'SOC' });
-                          setShowTeamDropdown(false);
-                        }}
-                      >
-                        SOC
-                      </div>
-                    </div>
-                  )}
-                </div>
+                  <option value="">Komanda seçin</option>
+                  {teams.map(team => (
+                    <option key={team.id} value={team.id}>
+                      {team.name.replace(' Team', '')}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
             <div className="modal-footer">

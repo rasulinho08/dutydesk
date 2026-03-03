@@ -724,6 +724,7 @@
     opacity: 0;
     transform: translateY(-8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -735,6 +736,7 @@
     opacity: 0;
     transform: translateY(8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -920,4 +922,53 @@
   .btn-confirm {
     width: 100%;
   }
+}
+
+.phone-input-container {
+  display: flex;
+  align-items: center;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: white;
+  transition: all 0.2s ease;
+  height: 42px;
+}
+
+.phone-prefix {
+  padding: 0 14px;
+  background-color: #f3f4f6;
+  color: #374151;
+  font-weight: 500;
+  font-size: 15px;
+  border-right: 1px solid #d1d5db;
+  white-space: nowrap;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 54px;
+}
+
+.phone-input {
+  flex: 1;
+  height: 100%;
+  border: none !important;
+  padding: 0 14px;
+  font-size: 15px;
+  outline: none;
+  background: transparent;
+}
+
+.phone-input::placeholder {
+  color: #9ca3af;
+}
+
+.form-group:focus-within .phone-input-container {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.phone-input:invalid:not(:placeholder-shown) {
+  color: #dc2626;
 }
