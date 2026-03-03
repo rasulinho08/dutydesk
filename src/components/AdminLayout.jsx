@@ -18,6 +18,15 @@ function AdminLayout({ children }) {
     { path: '/admin/schedule', icon: Calendar, label: 'Work schedule' },
     { path: '/admin/workers', icon: Users, label: 'Workers' }
   ]
+  const fullName = user
+    ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Admin User'
+    : 'Misafir'
+
+  const displayRole = user?.role?.toLowerCase() === 'admin'
+    ? 'Administrator'
+    : user?.role?.toLowerCase() === 'supervisor'
+      ? 'Supervisor'
+      : ''
 
   return (
     <div className="admin-layout">
@@ -61,8 +70,8 @@ function AdminLayout({ children }) {
               </div>
               {!collapsed && (
                 <div className="user-details">
-                  <span className="user-name">{user?.fullName || 'Admin'}</span>
-                  <span className="user-role">{user?.role || 'Administrator'}</span>
+                  <span className="user-name">{fullName || 'Admin'}</span>
+                  <span className="user-role">{displayRole || 'Administrator'}</span>
                 </div>
               )}
             </div>

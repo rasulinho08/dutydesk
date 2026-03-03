@@ -23,6 +23,12 @@ function Layout({ children }) {
     // { path: '/handover-history', icon: History, label: 'Təhvil-Təslim Tarixçəsi' },
   ]
 
+  const fullName = user
+    ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User'
+    : 'Misafir'
+
+  const displayRole = 'Employee'
+
   return (
     <div className="layout">
       {/* Header */}
@@ -62,15 +68,17 @@ function Layout({ children }) {
           <div className="sidebar-footer">
             <div className="user-info">
               <div className="user-avatar">
-                {user?.fullName?.substring(0, 2).toUpperCase() || 'US'}
+                {fullName.substring(0, 2).toUpperCase() || 'US'}
               </div>
+
               {!collapsed && (
                 <div className="user-details">
-                  <span className="user-name">{user?.fullName || 'User'}</span>
-                  <span className="user-role">{user?.role || 'Employee'}</span>
+                  <span className="user-name">{fullName}</span>
+                  <span className="user-role">{displayRole}</span>
                 </div>
               )}
             </div>
+
             <button className="logout-btn" onClick={logout}>
               <LogOut size={18} />
               {!collapsed && 'Exit'}
