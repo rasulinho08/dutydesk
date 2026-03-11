@@ -1,9 +1,64 @@
+import { useState, useEffect } from "react";
 import { Calendar, Users, CheckCircle, XCircle, TrendingUp, TrendingDown, User, Search, Filter, Download } from "lucide-react";
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
 import "./AdminStatistics.css";
 
 export default function AdminStatistics() {
+
+  const token = localStorage.getItem('token') || ''
+  const [dashboardData, setDashboardData] = useState(null)
+  const [teams, setTeams] = useState([])
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      if (!token) return
+      try {
+        const res = await fetch('https://dutydesk-g3ma.onrender.com/api/admin/dashboard', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        if (res.ok) {
+          const json = await res.json()
+          setDashboardData(json.data || {})
+        }
+      } catch (err) {
+        console.error('Dashboard fetch xətası:', err)
+      }
+    }
+
+    const fetchTeams = async () => {
+      if (!token) return
+      try {
+        const res = await fetch('https://dutydesk-g3ma.onrender.com/api/admin/teams', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        if (res.ok) {
+          const json = await res.json()
+          setTeams(json.data || [])
+        }
+      } catch (err) {
+        console.error('Teams fetch xətası:', err)
+      }
+    }
+
+    fetchDashboard()
+    fetchTeams()
+  }, [token])
+
+  const overview = dashboardData?.overview || {}
+  const totalEmployees = teams.reduce((sum, t) => sum + (t.memberCount || 0), 0)
+
+  const totalShifts = (overview.todayShifts || 0)
+  const completedShifts = (overview.completedHandovers || 0)
+  const incompleteShifts = (overview.pendingHandovers || 0) + (overview.emptyShifts || 0)
   
   const handleExportPDF = () => {
     const doc = new jsPDF()
@@ -22,13 +77,12 @@ export default function AdminStatistics() {
     
     const statsData = stats.map(stat => [
       stat.title,
-      stat.value.toString(),
-      stat.change
+      stat.value.toString()
     ])
-    
+
     doc.autoTable({
       startY: 45,
-      head: [['Gostrici', 'Deyer', 'Deyisiklik']],
+      head: [['Gostrici', 'Deyer']],
       body: statsData,
       styles: { 
         font: 'helvetica',
@@ -51,32 +105,28 @@ export default function AdminStatistics() {
   const stats = [
     {
       title: "Ümumi Növbələr (Bu ay)",
-      value: 666,
-      change: "+12%",
+      value: totalShifts,
       trend: "up",
       color: "blue",
       icon: <Calendar size={25} className="text-calendar" />,
     },
     {
       title: "Tamamlanmış Növbələr",
-      value: 654,
-      change: "+5%",
+      value: completedShifts,
       trend: "up",
       color: "green",
       icon: <CheckCircle size={25} />,
     },
     {
       title: "Tamamlanmamış növbələr",
-      value: 9,
-      change: "-8%",
+      value: incompleteShifts,
       trend: "down",
       color: "red",
       icon: <XCircle size={25} />,
     },
     {
       title: "Cari işçi sayı",
-      value: 17,
-      change: "+2%",
+      value: totalEmployees,
       trend: "up",
       color: "purple",
       icon: <Users size={25} />,
@@ -123,7 +173,6 @@ export default function AdminStatistics() {
                 ) : (
                   <TrendingDown size={14} />
                 )}
-                {item.change}
               </div>
             </div>
 
