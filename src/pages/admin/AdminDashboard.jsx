@@ -454,21 +454,6 @@ function AdminDashboard() {
       {/* Team Status */}
       <div className="team-status-section animate-fade-in">
         <div className="team-cards">
-          <div className="team-card total-card hover-lift">
-            <div className="card-header">
-              <div className="team-icon-box total-bg">
-                <Users size={24} color="white" />
-              </div>
-              <div className="team-title-box">
-                <h3>Ümumi İşçi</h3>
-                <span className="member-count">{totalEmployees} İşçi</span>
-              </div>
-              <span className="shift-badge total-badge">
-                {onDutyNow.length} növbədə
-              </span>
-            </div>
-          </div>
-
           {dynamicTeams.map((team, idx) => (
             <div
               key={team.displayName}

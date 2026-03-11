@@ -137,22 +137,25 @@ function AdminWorkers() {
     return searchMatch && teamMatch
   })
 
-  // Stats
-  const getTeamStats = (teamName) => {
-    const teamWorkers = workers.filter(w => w.team === teamName)
-    const onDuty = teamWorkers.filter(w => w.status === 'Növbədə').length
-    return {
-      label: `${teamName} Komandası`,
-      sublabel: `${onDuty} növbədə`,
-      value: teamWorkers.length,
-    }
+  // Stats - teams API-dən gələn memberCount ilə
+  const getTeamMemberCount = (shortName) => {
+    const team = teams.find(t => {
+      const n = t.name.toLowerCase()
+      if (shortName === 'APM') return n.includes('apm')
+      if (shortName === 'NOC') return n.includes('noc')
+      if (shortName === 'SOC') return n.includes('soc')
+      return false
+    })
+    return team?.memberCount || 0
   }
 
+  const totalEmployees = teams.reduce((sum, t) => sum + (t.memberCount || 0), 0)
+
   const stats = [
-    { label: 'Ümumi İşçi', value: workers.length, color: '#155DFC' },
-    { ...getTeamStats('APM'), bg: '#1380AF' },
-    { ...getTeamStats('NOC'), bg: '#1D984B' },
-    { ...getTeamStats('SOC'), bg: '#7F38B2' },
+    { label: 'Ümumi İşçi', value: totalEmployees, color: '#155DFC' },
+    { label: 'APM Komandası', value: getTeamMemberCount('APM'), bg: '#1380AF' },
+    { label: 'NOC Komandası', value: getTeamMemberCount('NOC'), bg: '#1D984B' },
+    { label: 'SOC Komandası', value: getTeamMemberCount('SOC'), bg: '#7F38B2' },
   ]
 
 
