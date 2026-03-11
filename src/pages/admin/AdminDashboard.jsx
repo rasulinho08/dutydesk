@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+  import { useState, useEffect } from 'react'
 import {
   Bell, AlertTriangle, Clock, Users, Calendar,
   ChevronRight, UserPlus, X, Check, Search,
@@ -13,6 +13,7 @@ function AdminDashboard() {
   const [dashboardData, setDashboardData] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [teams, setTeams] = useState([])
 
 
   const [showAssignModal, setShowAssignModal] = useState(false)
@@ -99,6 +100,37 @@ function AdminDashboard() {
     return () => clearInterval(interval)
 
   }, [token])
+
+  // Fetch teams for member counts
+  useEffect(() => {
+    const fetchTeams = async () => {
+      if (!token) return
+      try {
+        const res = await fetch('https://dutydesk-g3ma.onrender.com/api/admin/teams', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        if (res.ok) {
+          const json = await res.json()
+          setTeams(json.data || [])
+        }
+      } catch (err) {
+        console.error('Teams fetch xətası:', err)
+      }
+    }
+    fetchTeams()
+  }, [token])
+
+  // Helper to get memberCount by team name
+  const getTeamMemberCount = (name) => {
+    const team = teams.find(t => t.name.toLowerCase().includes(name.toLowerCase()))
+    return team ? team.memberCount : 0
+  }
+
+  const totalEmployees = teams.reduce((sum, t) => sum + (t.memberCount || 0), 0)
 
   // Mövcud isShiftActive funksiyası və timer
   useEffect(() => {
@@ -427,9 +459,7 @@ function AdminDashboard() {
                 <div className="team-title-box">
                   <h3>{team.displayName}</h3>
                   <span className="member-count">
-                    {team.cssClass === 'apm' ? 3 :
-                      team.cssClass === 'noc' ? 3 :
-                        team.cssClass === 'soc' ? 3 : 4} İşçi
+                    {getTeamMemberCount(team.displayName)} İşçi
                   </span>
                 </div>
                 <span className={`shift-badge ${team.cssClass}-badge`}>
