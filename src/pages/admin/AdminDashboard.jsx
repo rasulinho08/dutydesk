@@ -83,7 +83,8 @@ function AdminDashboard() {
         const json = await res.json()
 
         setDashboardData(json.data || {})
-        console.log(json.data)
+        setAlerts(json.data?.alerts || [])
+        console.log('dashboard:', json.data)
 
       } catch (err) {
         console.error('Dashboard fetch xətası:', err)
@@ -116,6 +117,7 @@ function AdminDashboard() {
         if (res.ok) {
           const json = await res.json()
           setTeams(json.data || [])
+          console.log('teams:', json.data)
         }
       } catch (err) {
         console.error('Teams fetch xətası:', err)
@@ -125,9 +127,15 @@ function AdminDashboard() {
   }, [token])
 
   // Helper to get memberCount by team name
-  const getTeamMemberCount = (name) => {
-    const team = teams.find(t => t.name.toLowerCase().includes(name.toLowerCase()))
-    return team ? team.memberCount : 0
+  const getTeamMemberCount = (shortName) => {
+    const team = teams.find(t => {
+      const n = t.name.toLowerCase()
+      if (shortName === 'APM') return n.includes('apm')
+      if (shortName === 'NOC') return n.includes('noc')
+      if (shortName === 'SOC') return n.includes('soc')
+      return false
+    })
+    return team?.memberCount || 0
   }
 
   const totalEmployees = teams.reduce((sum, t) => sum + (t.memberCount || 0), 0)
@@ -142,7 +150,7 @@ function AdminDashboard() {
 
 
   const onDutyNow = dashboardData?.onDutyNow || []
-  const alerts = dashboardData?.alerts || []
+  const [alerts, setAlerts] = useState([])
   const stats = dashboardData?.overview || {
     totalOnDuty: 0,
     totalWorkers: 0,
@@ -380,7 +388,7 @@ function AdminDashboard() {
       setSelectedShift({ team: alert.team, time: alert.detail })
       setShowAssignModal(true)
     } else if (alert.action === 'contact') {
-      const duty = onDutyNow.find(d => d.worker === alert.worker)
+      const duty = onDutyNow.find(d => d.name === alert.worker || d.worker === alert.worker)
       if (duty) {
         setSelectedOnDuty(duty)
         setShowOnDutyModal(true)
@@ -446,6 +454,21 @@ function AdminDashboard() {
       {/* Team Status */}
       <div className="team-status-section animate-fade-in">
         <div className="team-cards">
+          <div className="team-card total-card hover-lift">
+            <div className="card-header">
+              <div className="team-icon-box total-bg">
+                <Users size={24} color="white" />
+              </div>
+              <div className="team-title-box">
+                <h3>Ümumi İşçi</h3>
+                <span className="member-count">{totalEmployees} İşçi</span>
+              </div>
+              <span className="shift-badge total-badge">
+                {onDutyNow.length} növbədə
+              </span>
+            </div>
+          </div>
+
           {dynamicTeams.map((team, idx) => (
             <div
               key={team.displayName}
