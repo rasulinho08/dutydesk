@@ -3,7 +3,10 @@ import { ChevronLeft, ChevronRight, Calendar, Plus, X, Check, RefreshCw, User, C
 import './AdminSchedule.css'
 
 function AdminSchedule() {
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 1, 1))
+  const [currentDate, setCurrentDate] = useState(() => {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), 1)
+  })
   const [selectedTeam, setSelectedTeam] = useState('Hamısı')
   const [showAddModal, setShowAddModal] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
@@ -20,15 +23,123 @@ function AdminSchedule() {
     worker: ''
   })
 
-  const workers = [
-    { id: 1, name: 'Leyla Mammadova', email: 'leyla@company.az', team: 'APM', status: 'Növbədə' },
-    { id: 2, name: 'Əli Quliyev', email: 'ali@company.az', team: 'APM', status: 'Ölçələndir' },
-    { id: 3, name: 'Nigar Həmidova', email: 'nigar@company.az', team: 'APM', status: 'İstirahətdə' },
-    { id: 4, name: 'Rəşad İbrahimov', email: 'rashad@company.az', team: 'NOC', status: 'Əlçatandır' },
-    { id: 5, name: 'Aynur Əliyeva', email: 'aynur@company.az', team: 'NOC', status: 'Növbədə' },
-    { id: 6, name: 'Kamran Hüseynov', email: 'kamran@company.az', team: 'NOC', status: 'Əlçatandır' },
-    { id: 7, name: 'Nərmin Quliyeva', email: 'narmin@company.az', team: 'SOC', status: 'İstirahətdə' }
-  ]
+  const token = localStorage.getItem('token') || ''
+  const [workers, setWorkers] = useState([])
+  const [shifts, setShifts] = useState([])
+
+  // Fetch workers from API
+  useEffect(() => {
+    const fetchWorkers = async () => {
+      if (!token) return
+      try {
+        const res = await fetch('https://dutydesk-g3ma.onrender.com/api/admin/users?page=1&limit=50', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        if (res.ok) {
+          const json = await res.json()
+          if (json.success && json.data?.users) {
+            const mapped = json.data.users
+              .filter(u => u.role === 'employee' && u.isActive)
+              .map(u => ({
+                id: u.id,
+                name: `${u.firstName}${u.lastName ? ' ' + u.lastName : ''}`.trim(),
+                email: u.email,
+                team: u.team?.name?.replace(/ Team$/i, '') || 'Digər',
+                status: 'Əlçatandır'
+              }))
+            setWorkers(mapped)
+          }
+        }
+      } catch (err) {
+        console.error('Workers fetch xətası:', err)
+      }
+    }
+    fetchWorkers()
+  }, [token])
+
+  // Helper: get ISO week string for a date
+  const getISOWeek = (date) => {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7))
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
+    const weekNo = Math.ceil(((d - yearStart) / 86400000 + 1) / 7)
+    return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`
+  }
+
+  // Get all weeks that cover the current month
+  const getWeeksForMonth = (date) => {
+    const year = date.getFullYear()
+    const month = date.getMonth()
+    const weeks = new Set()
+    for (let day = 1; day <= 31; day++) {
+      const d = new Date(year, month, day)
+      if (d.getMonth() !== month) break
+      weeks.add(getISOWeek(d))
+    }
+    return [...weeks]
+  }
+
+  // Fetch schedules from API
+  useEffect(() => {
+    const fetchSchedules = async () => {
+      if (!token) return
+      setIsLoading(true)
+      try {
+        const weeks = getWeeksForMonth(currentDate)
+        const allShifts = []
+        let shiftId = 1
+
+        for (const week of weeks) {
+          try {
+            const res = await fetch(`https://dutydesk-g3ma.onrender.com/api/admin/schedules?week=${week}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            })
+            if (res.ok) {
+              const json = await res.json()
+              if (json.success && json.data?.days) {
+                json.data.days.forEach(dayData => {
+                  const dateObj = new Date(dayData.date)
+                  const dayNum = dateObj.getDate()
+                  const dayMonth = dateObj.getMonth()
+
+                  if (dayMonth === currentDate.getMonth()) {
+                    const shiftTypes = { day: '08:00-16:00', evening: '16:00-00:00', night: '00:00-08:00' }
+                    Object.entries(shiftTypes).forEach(([type, time]) => {
+                      const shiftList = dayData.shifts?.[type] || []
+                      shiftList.forEach(s => {
+                        allShifts.push({
+                          id: shiftId++,
+                          date: dayNum,
+                          team: s.teamName?.replace(/ Team$/i, '') || 'APM',
+                          time,
+                          worker: s.userName || 'N/A'
+                        })
+                      })
+                    })
+                  }
+                })
+              }
+            }
+          } catch (err) {
+            console.error(`Week ${week} fetch xətası:`, err)
+          }
+        }
+
+        setShifts(allShifts)
+      } catch (err) {
+        console.error('Schedules fetch xətası:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchSchedules()
+  }, [token, currentDate])
 
   const filteredWorkers = workers.filter(w => 
     w.team === newShift.team && 
@@ -48,39 +159,7 @@ function AdminSchedule() {
       .replace(/\s+/g, '')
   }
 
-  useEffect(() => {
-    setTimeout(() => setIsLoading(false), 600)
-  }, [])
-
   const teams = ['APM', 'NOC', 'SOC']
-
-  const [shifts, setShifts] = useState([
-    // Day 1
-    { id: 1, date: 1, team: 'APM', time: '09:00-17:00', worker: 'Əli' },
-    { id: 2, date: 1, team: 'APM', time: '17:00-01:00', worker: 'Həsan' },
-    { id: 3, date: 1, team: 'APM', time: '01:00-09:00', worker: 'Leyla' },
-    // Day 2
-    { id: 4, date: 2, team: 'APM', time: '09:00-17:00', worker: 'Əli' },
-    { id: 5, date: 2, team: 'APM', time: '17:00-01:00', worker: 'Həsan' },
-    { id: 6, date: 2, team: 'APM', time: '01:00-09:00', worker: 'Leyla' },
-    // Day 3
-    { id: 7, date: 3, team: 'APM', time: '09:00-17:00', worker: 'Əli' },
-    { id: 8, date: 3, team: 'APM', time: '17:00-01:00', worker: 'Həsan' },
-    { id: 9, date: 3, team: 'APM', time: '01:00-09:00', worker: 'Leyla' },
-    // Day 5
-    { id: 10, date: 5, team: 'APM', time: '09:00-17:00', worker: 'Əli' },
-    { id: 11, date: 5, team: 'APM', time: '17:00-01:00', worker: 'Həsan' },
-    // Day 6
-    { id: 12, date: 6, team: 'APM', time: '09:00-17:00', worker: 'Əli' },
-    // Day 7
-    { id: 13, date: 7, team: 'APM', time: '09:00-17:00', worker: 'Əli' },
-    // Day 8
-    { id: 14, date: 8, team: 'APM', time: '09:00-17:00', worker: 'Əli' },
-    // Day 9
-    { id: 15, date: 9, team: 'APM', time: '09:00-17:00', worker: 'Əli' },
-    // Day 10
-    { id: 16, date: 10, team: 'APM', time: '09:00-17:00', worker: 'Əli' }
-  ])
 
   const displayToast = (message) => {
     setToastMessage(message)

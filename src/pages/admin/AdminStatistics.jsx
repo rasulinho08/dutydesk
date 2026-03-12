@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calendar, Users, CheckCircle, XCircle, TrendingUp, TrendingDown, User, Search, Filter, Download } from "lucide-react";
+import { Calendar, Users, CheckCircle, XCircle, TrendingUp, TrendingDown, User, Search, Filter, Download, Clock } from "lucide-react";
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
 import "./AdminStatistics.css";
@@ -9,6 +9,7 @@ export default function AdminStatistics() {
   const token = localStorage.getItem('token') || ''
   const [dashboardData, setDashboardData] = useState(null)
   const [teams, setTeams] = useState([])
+  const [upcomingShifts, setUpcomingShifts] = useState([])
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -49,8 +50,57 @@ export default function AdminStatistics() {
       }
     }
 
+    const fetchSchedules = async () => {
+      if (!token) return
+      try {
+        // Get current ISO week
+        const now = new Date()
+        const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
+        d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7))
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
+        const weekNo = Math.ceil(((d - yearStart) / 86400000 + 1) / 7)
+        const week = `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`
+
+        const res = await fetch(`https://dutydesk-g3ma.onrender.com/api/admin/schedules?week=${week}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        if (res.ok) {
+          const json = await res.json()
+          if (json.success && json.data?.days) {
+            const shifts = []
+            const today = new Date().toISOString().split('T')[0]
+            json.data.days.forEach(dayData => {
+              if (dayData.date >= today) {
+                const shiftTypes = { day: '08:00 - 16:00', evening: '16:00 - 00:00', night: '00:00 - 08:00' }
+                Object.entries(shiftTypes).forEach(([type, time]) => {
+                  const shiftList = dayData.shifts?.[type] || []
+                  shiftList.forEach(s => {
+                    shifts.push({
+                      date: dayData.date,
+                      time,
+                      team: s.teamName?.replace(/ Team$/i, '') || 'APM',
+                      teamColor: (s.teamName?.toLowerCase().includes('noc') ? 'noc' :
+                        s.teamName?.toLowerCase().includes('soc') ? 'soc' : 'apm'),
+                      worker: s.userName || 'N/A'
+                    })
+                  })
+                })
+              }
+            })
+            setUpcomingShifts(shifts)
+          }
+        }
+      } catch (err) {
+        console.error('Schedules fetch xətası:', err)
+      }
+    }
+
     fetchDashboard()
     fetchTeams()
+    fetchSchedules()
   }, [token])
 
   const overview = dashboardData?.overview || {}
@@ -215,22 +265,22 @@ export default function AdminStatistics() {
       {/* UPCOMING SHIFTS */}
       <div className="card-shifts">
         <h3>Gələcək Növbələr</h3>
-        {[
-          { team: "APM", color: "apm" },
-          { team: "NOC", color: "noc" },
-          { team: "SOC", color: "soc" },
-        ].map((item, i) => (
-          <div key={i} className="shift-item">
-            <div className="shift-header">
-              <div className={`badge ${item.color}`}>{item.team}</div>
-              <span className="shift-date-stat">2026-02-03 &nbsp; 09:00 - 17:00</span>
+        {upcomingShifts.length > 0 ? (
+          upcomingShifts.map((shift, i) => (
+            <div key={i} className="shift-item">
+              <div className="shift-header">
+                <div className={`badge ${shift.teamColor}`}>{shift.team}</div>
+                <span className="shift-date-stat">{shift.date} &nbsp; {shift.time}</span>
+              </div>
+              <div className="employee-info">
+                <User size={18} className="employee-icon" />
+                <strong className="employee-name">{shift.worker}</strong>
+              </div>
             </div>
-            <div className="employee-info">
-              <User size={18} className="employee-icon" />
-              <strong className="employee-name">Leyla Məmmədova</strong>
-            </div>
-          </div>
-        ))}
+          ))
+        ) : (
+          <p style={{ padding: '16px', color: '#888' }}>Gələcək növbə tapılmadı</p>
+        )}
       </div>
     </div>
   );
