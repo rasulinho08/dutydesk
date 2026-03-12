@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Calendar, Plus, X, Check, RefreshCw, User, Clock, Search } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar, Plus, X, Check, RefreshCw, User, Clock, Search, Zap } from 'lucide-react'
 import './AdminSchedule.css'
 
 function AdminSchedule() {
@@ -26,6 +26,33 @@ function AdminSchedule() {
   const token = localStorage.getItem('token') || ''
   const [workers, setWorkers] = useState([])
   const [shifts, setShifts] = useState([])
+  const [teamsList, setTeamsList] = useState([])
+
+  // Auto Generate state
+  const [showGenerateModal, setShowGenerateModal] = useState(false)
+  const [generateTeam, setGenerateTeam] = useState('')
+  const [generateYear, setGenerateYear] = useState(() => new Date().getFullYear())
+  const [generateMonth, setGenerateMonth] = useState(() => new Date().getMonth() + 1)
+  const [isGenerating, setIsGenerating] = useState(false)
+
+  // Fetch teams for generate modal
+  useEffect(() => {
+    const fetchTeams = async () => {
+      if (!token) return
+      try {
+        const res = await fetch('https://dutydesk-g3ma.onrender.com/api/admin/teams', {
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+        })
+        if (res.ok) {
+          const json = await res.json()
+          setTeamsList(json.data || [])
+        }
+      } catch (err) {
+        console.error('Teams fetch xətası:', err)
+      }
+    }
+    fetchTeams()
+  }, [token])
 
   // Fetch workers from API
   useEffect(() => {
@@ -254,6 +281,52 @@ function AdminSchedule() {
     displayToast('Növbə silindi!')
   }
 
+  const handleGenerate = async () => {
+    if (!generateTeam) {
+      displayToast('Komanda seçin!')
+      return
+    }
+    setIsGenerating(true)
+    try {
+      const res = await fetch('https://dutydesk-g3ma.onrender.com/api/admin/schedules/generate', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          teamId: generateTeam,
+          year: generateYear,
+          month: generateMonth
+        })
+      })
+      const json = await res.json()
+      console.log('generate response:', json)
+      if (res.ok && json.success) {
+        displayToast('1 aylıq növbə cədvəli uğurla yaradıldı!')
+        setShowGenerateModal(false)
+        // Refresh calendar if generated month matches current view
+        if (generateYear === currentDate.getFullYear() && generateMonth === currentDate.getMonth() + 1) {
+          setCurrentDate(new Date(currentDate)) // trigger re-fetch
+        }
+      } else {
+        displayToast(json.error?.message || json.message || 'Xəta baş verdi!')
+      }
+    } catch (err) {
+      console.error('Generate xətası:', err)
+      displayToast('Server xətası!')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const openGenerateModal = () => {
+    setGenerateYear(currentDate.getFullYear())
+    setGenerateMonth(currentDate.getMonth() + 1)
+    setGenerateTeam(teamsList.length > 0 ? teamsList[0].id : '')
+    setShowGenerateModal(true)
+  }
+
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
   const dayNames = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
 
@@ -302,6 +375,10 @@ function AdminSchedule() {
             </div>
           </div>
           <div className="header-controls">
+            <button className="btn-generate" onClick={openGenerateModal}>
+              <Zap size={16} />
+              Auto Generate
+            </button>
             <div className="team-filters">
               {teams.map(team => (
                 <button
@@ -478,6 +555,97 @@ function AdminSchedule() {
             <div className="modal-footer">
               <button className="btn-danger" onClick={handleDeleteShift}>Sil</button>
               <button className="btn-confirm" onClick={() => setShowDetailModal(false)}>Bağla</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Auto Generate Modal */}
+      {showGenerateModal && (
+        <div className="modal-overlay" onClick={() => setShowGenerateModal(false)}>
+          <div className="modal-content animate-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h3>Avtomatik Növbə Yarat</h3>
+                <p style={{ fontSize: '13px', color: '#888', marginTop: 4 }}>
+                  Seçilmiş komanda üçün 1 aylıq növbə cədvəli yaradılacaq
+                </p>
+              </div>
+              <button className="close-btn" onClick={() => setShowGenerateModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="detail-section">
+                <div className="detail-label">
+                  <User size={16} />
+                  Komanda
+                </div>
+                <select
+                  className="generate-select"
+                  value={generateTeam}
+                  onChange={e => setGenerateTeam(e.target.value)}
+                >
+                  <option value="">Komanda seçin</option>
+                  {teamsList.map(t => (
+                    <option key={t.id} value={t.id}>
+                      {t.name.replace(/ Team$/i, '')}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="detail-section">
+                <div className="detail-label">
+                  <Calendar size={16} />
+                  İl
+                </div>
+                <select
+                  className="generate-select"
+                  value={generateYear}
+                  onChange={e => setGenerateYear(Number(e.target.value))}
+                >
+                  {[2025, 2026, 2027].map(y => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="detail-section">
+                <div className="detail-label">
+                  <Calendar size={16} />
+                  Ay
+                </div>
+                <select
+                  className="generate-select"
+                  value={generateMonth}
+                  onChange={e => setGenerateMonth(Number(e.target.value))}
+                >
+                  {monthNames.map((name, idx) => (
+                    <option key={idx} value={idx + 1}>{name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-cancel" onClick={() => setShowGenerateModal(false)}>
+                Ləğv et
+              </button>
+              <button
+                className="btn-confirm"
+                onClick={handleGenerate}
+                disabled={isGenerating || !generateTeam}
+              >
+                {isGenerating ? (
+                  <>
+                    <RefreshCw size={16} className="spin" />
+                    Yaradılır...
+                  </>
+                ) : (
+                  <>
+                    <Zap size={16} />
+                    Generate
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
