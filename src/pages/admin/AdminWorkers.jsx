@@ -176,7 +176,7 @@ function AdminWorkers() {
       displayToast('Şifrə ən azı 6 simvol olmalıdır!');
       return;
     }
-    if (!newWorker.teamId) {
+    if (!newWorker.teamId && newWorker.role === 'employee') {
       displayToast('Komanda seçilməlidir!');
       return;
     }
@@ -197,8 +197,8 @@ function AdminWorkers() {
           email: newWorker.email.trim(),
           phone: `+994${newWorker.phone}`,
           password: newWorker.password,
-          role: 'employee',
-          teamId: newWorker.teamId,
+          role: newWorker.role,
+          ...(newWorker.teamId && { teamId: newWorker.teamId }),
         }),
       });
 
@@ -216,7 +216,7 @@ function AdminWorkers() {
 
       // Formu sıfırla
       setNewWorker({
-        firstName: '', lastName: '', email: '', phone: '', password: '', teamId: '', role: 'EMPLOYEE'
+        firstName: '', lastName: '', email: '', phone: '', password: '', teamId: '', role: 'employee'
       });
 
       // Siyahını yenilə 
@@ -499,6 +499,18 @@ function AdminWorkers() {
                       {team.name.replace(' Team', '')}
                     </option>
                   ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Rol</label>
+                <select
+                  value={newWorker.role}
+                  onChange={e => setNewWorker({ ...newWorker, role: e.target.value })}
+                >
+                  <option value="employee">Employee</option>
+                  <option value="admin">Admin</option>
+                  <option value="supervisor">Supervisor</option>
                 </select>
               </div>
             </div>
