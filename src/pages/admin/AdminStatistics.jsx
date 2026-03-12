@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calendar, Users, CheckCircle, XCircle, TrendingUp, TrendingDown, User, Search, Filter, Download, Clock } from "lucide-react";
+import { Calendar, Users, CheckCircle, XCircle, TrendingUp, TrendingDown, User, Search, Filter, Download } from "lucide-react";
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
 import "./AdminStatistics.css";
@@ -9,8 +9,8 @@ export default function AdminStatistics() {
   const token = localStorage.getItem('token') || ''
   const [dashboardData, setDashboardData] = useState(null)
   const [teams, setTeams] = useState([])
-  const [upcomingShifts, setUpcomingShifts] = useState([])
   const [shiftHistory, setShiftHistory] = useState([])
+  const [upcomingShifts, setUpcomingShifts] = useState([])
 
   // Filter state
   const [dateFrom, setDateFrom] = useState(() => {
@@ -29,11 +29,7 @@ export default function AdminStatistics() {
       if (!token) return
       try {
         const res = await fetch('https://dutydesk-g3ma.onrender.com/api/admin/dashboard', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
         })
         if (res.ok) {
           const json = await res.json()
@@ -48,11 +44,7 @@ export default function AdminStatistics() {
       if (!token) return
       try {
         const res = await fetch('https://dutydesk-g3ma.onrender.com/api/admin/teams', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
         })
         if (res.ok) {
           const json = await res.json()
@@ -67,7 +59,22 @@ export default function AdminStatistics() {
     fetchTeams()
   }, [token])
 
-  // Fetch shift history with filters
+  // Helper: get team short name and color from teamName
+  const getTeamInfo = (teamName) => {
+    const name = (teamName || '').toLowerCase()
+    if (name.includes('noc')) return { short: 'NOC', color: 'noc' }
+    if (name.includes('soc')) return { short: 'SOC', color: 'soc' }
+    if (name.includes('apm')) return { short: 'APM', color: 'apm' }
+    return { short: teamName?.replace(/ Team$/i, '') || 'N/A', color: 'apm' }
+  }
+
+  // Helper: find team UUID by short name
+  const getTeamId = (shortName) => {
+    const teamObj = teams.find(t => t.name.toLowerCase().includes(shortName.toLowerCase()))
+    return teamObj?.id || null
+  }
+
+  // Fetch shift history (past shifts) with filters
   useEffect(() => {
     const fetchShifts = async () => {
       if (!token) return
@@ -79,84 +86,65 @@ export default function AdminStatistics() {
           limit: '50'
         })
 
-        // Find team UUID if a specific team is selected
         if (selectedTeam !== 'Bütün Komandalar') {
-          const teamObj = teams.find(t => {
-            const n = t.name.toLowerCase()
-            return n.includes(selectedTeam.toLowerCase())
-          })
-          if (teamObj) params.set('team', teamObj.id)
+          const teamId = getTeamId(selectedTeam)
+          if (teamId) params.set('team', teamId)
         }
 
         const res = await fetch(`https://dutydesk-g3ma.onrender.com/api/admin/shifts?${params.toString()}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
         })
         if (res.ok) {
           const json = await res.json()
-          if (json.success) {
-            setShiftHistory(json.data?.shifts || json.data?.items || [])
+          console.log('shifts response:', json)
+          if (json.success && json.data) {
+            const shifts = json.data.shifts || json.data.items || json.data || []
+            setShiftHistory(Array.isArray(shifts) ? shifts : [])
           }
         }
       } catch (err) {
         console.error('Shifts fetch xətası:', err)
       }
     }
-    fetchShifts()
+    if (teams.length > 0 || selectedTeam === 'Bütün Komandalar') {
+      fetchShifts()
+    }
   }, [token, dateFrom, dateTo, selectedTeam, teams])
 
-  // Fetch upcoming shifts from schedules
+  // Fetch upcoming shifts (scheduled, from today forward)
   useEffect(() => {
-    const fetchSchedules = async () => {
+    const fetchUpcoming = async () => {
       if (!token) return
       try {
-        const now = new Date()
-        const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
-        d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7))
-        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
-        const weekNo = Math.ceil(((d - yearStart) / 86400000 + 1) / 7)
-        const week = `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`
+        const today = new Date().toISOString().split('T')[0]
+        const nextMonth = new Date()
+        nextMonth.setDate(nextMonth.getDate() + 30)
+        const toDate = nextMonth.toISOString().split('T')[0]
 
-        const res = await fetch(`https://dutydesk-g3ma.onrender.com/api/admin/schedules?week=${week}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+        const params = new URLSearchParams({
+          status: 'scheduled',
+          from: today,
+          to: toDate,
+          page: '1',
+          limit: '20'
+        })
+
+        const res = await fetch(`https://dutydesk-g3ma.onrender.com/api/admin/shifts?${params.toString()}`, {
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
         })
         if (res.ok) {
           const json = await res.json()
-          if (json.success && json.data?.days) {
-            const shifts = []
-            const today = new Date().toISOString().split('T')[0]
-            json.data.days.forEach(dayData => {
-              if (dayData.date >= today) {
-                const shiftTypes = { day: '08:00 - 16:00', evening: '16:00 - 00:00', night: '00:00 - 08:00' }
-                Object.entries(shiftTypes).forEach(([type, time]) => {
-                  const shiftList = dayData.shifts?.[type] || []
-                  shiftList.forEach(s => {
-                    const teamShort = s.teamName?.replace(/ Team$/i, '') || 'APM'
-                    shifts.push({
-                      date: dayData.date,
-                      time,
-                      team: teamShort,
-                      teamColor: teamShort.toLowerCase() === 'noc' ? 'noc' :
-                        teamShort.toLowerCase() === 'soc' ? 'soc' : 'apm',
-                      worker: s.userName || 'N/A'
-                    })
-                  })
-                })
-              }
-            })
-            setUpcomingShifts(shifts)
+          console.log('upcoming shifts response:', json)
+          if (json.success && json.data) {
+            const shifts = json.data.shifts || json.data.items || json.data || []
+            setUpcomingShifts(Array.isArray(shifts) ? shifts : [])
           }
         }
       } catch (err) {
-        console.error('Schedules fetch xətası:', err)
+        console.error('Upcoming shifts fetch xətası:', err)
       }
     }
-    fetchSchedules()
+    fetchUpcoming()
   }, [token])
 
   const overview = dashboardData?.overview || {}
@@ -168,18 +156,19 @@ export default function AdminStatistics() {
 
   // Filter shift history for display
   const filteredHistory = shiftHistory.filter(s => {
+    const teamInfo = getTeamInfo(s.teamName)
     const teamMatch = historyTeamFilter === 'Bütün Komandalar' ||
-      (s.teamName?.toLowerCase().includes(historyTeamFilter.toLowerCase()))
+      teamInfo.short === historyTeamFilter
     const searchMatch = !historySearch ||
       (s.userName?.toLowerCase().includes(historySearch.toLowerCase())) ||
       (s.teamName?.toLowerCase().includes(historySearch.toLowerCase()))
     return teamMatch && searchMatch
   })
 
-  // Filter upcoming shifts by selected team
+  // Filter upcoming shifts by header team filter
   const filteredUpcoming = selectedTeam === 'Bütün Komandalar'
     ? upcomingShifts
-    : upcomingShifts.filter(s => s.team === selectedTeam)
+    : upcomingShifts.filter(s => getTeamInfo(s.teamName).short === selectedTeam)
 
   const handleExportPDF = () => {
     const doc = new jsPDF()
@@ -202,18 +191,9 @@ export default function AdminStatistics() {
       startY: 45,
       head: [['Gostrici', 'Deyer']],
       body: statsData,
-      styles: {
-        font: 'helvetica',
-        fontSize: 10
-      },
-      headStyles: {
-        fillColor: [19, 128, 175],
-        textColor: 255,
-        fontStyle: 'bold'
-      },
-      alternateRowStyles: {
-        fillColor: [245, 245, 245]
-      }
+      styles: { font: 'helvetica', fontSize: 10 },
+      headStyles: { fillColor: [19, 128, 175], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [245, 245, 245] }
     })
 
     doc.save(`statistika-${new Date().toLocaleDateString('az-AZ')}.pdf`)
@@ -257,22 +237,14 @@ export default function AdminStatistics() {
         <h2>Ümumi statistika</h2>
 
         <div className="filters">
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={e => setDateFrom(e.target.value)}
-          />
+          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
           <span>→</span>
-          <input
-            type="date"
-            value={dateTo}
-            onChange={e => setDateTo(e.target.value)}
-          />
+          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
 
           <select value={selectedTeam} onChange={e => setSelectedTeam(e.target.value)}>
             <option>Bütün Komandalar</option>
-            <option>NOC</option>
             <option>APM</option>
+            <option>NOC</option>
             <option>SOC</option>
           </select>
         </div>
@@ -284,16 +256,10 @@ export default function AdminStatistics() {
           <div key={i} className={`stat-card ${item.color}`}>
             <div className="stat-top">
               <div className={`stat-icon ${item.color}`}>{item.icon}</div>
-
               <div className={`stat-change ${item.trend} ${item.color}`}>
-                {item.trend === "up" ? (
-                  <TrendingUp size={14} />
-                ) : (
-                  <TrendingDown size={14} />
-                )}
+                {item.trend === "up" ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
               </div>
             </div>
-
             <p className="stat-title">{item.title}</p>
             <h3 className="stat-value">{item.value}</h3>
           </div>
@@ -337,13 +303,11 @@ export default function AdminStatistics() {
         {filteredHistory.length > 0 ? (
           <div className="shift-history-list">
             {filteredHistory.map((shift, i) => {
-              const teamShort = shift.teamName?.replace(/ Team$/i, '') || 'N/A'
-              const teamColor = teamShort.toLowerCase() === 'noc' ? 'noc' :
-                teamShort.toLowerCase() === 'soc' ? 'soc' : 'apm'
+              const teamInfo = getTeamInfo(shift.teamName)
               return (
                 <div key={shift.id || i} className="shift-item">
                   <div className="shift-header">
-                    <div className={`badge ${teamColor}`}>{teamShort}</div>
+                    <div className={`badge ${teamInfo.color}`}>{teamInfo.short}</div>
                     <span className="shift-date-stat">
                       {shift.date} &nbsp; {shift.startTime || ''} - {shift.endTime || ''}
                     </span>
@@ -351,9 +315,11 @@ export default function AdminStatistics() {
                   <div className="employee-info">
                     <User size={18} className="employee-icon" />
                     <strong className="employee-name">{shift.userName || 'N/A'}</strong>
-                    <span className={`status-badge-stat ${shift.status?.toLowerCase()}`}>
-                      {shift.status || ''}
-                    </span>
+                    {shift.status && (
+                      <span className={`status-badge-stat ${shift.status.toLowerCase()}`}>
+                        {shift.typeLabel || shift.status}
+                      </span>
+                    )}
                   </div>
                 </div>
               )
@@ -368,18 +334,23 @@ export default function AdminStatistics() {
       <div className="card-shifts">
         <h3>Gələcək Növbələr</h3>
         {filteredUpcoming.length > 0 ? (
-          filteredUpcoming.map((shift, i) => (
-            <div key={i} className="shift-item">
-              <div className="shift-header">
-                <div className={`badge ${shift.teamColor}`}>{shift.team}</div>
-                <span className="shift-date-stat">{shift.date} &nbsp; {shift.time}</span>
+          filteredUpcoming.map((shift, i) => {
+            const teamInfo = getTeamInfo(shift.teamName)
+            return (
+              <div key={shift.id || i} className="shift-item">
+                <div className="shift-header">
+                  <div className={`badge ${teamInfo.color}`}>{teamInfo.short}</div>
+                  <span className="shift-date-stat">
+                    {shift.date} &nbsp; {shift.startTime || ''} - {shift.endTime || ''}
+                  </span>
+                </div>
+                <div className="employee-info">
+                  <User size={18} className="employee-icon" />
+                  <strong className="employee-name">{shift.userName || 'N/A'}</strong>
+                </div>
               </div>
-              <div className="employee-info">
-                <User size={18} className="employee-icon" />
-                <strong className="employee-name">{shift.worker}</strong>
-              </div>
-            </div>
-          ))
+            )
+          })
         ) : (
           <p style={{ padding: '16px', color: '#888' }}>Gələcək növbə tapılmadı</p>
         )}
