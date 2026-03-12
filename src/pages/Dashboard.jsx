@@ -57,7 +57,7 @@ function Dashboard() {
         const today = new Date().toISOString().split('T')[0]
         const future = new Date(); future.setDate(future.getDate() + 14)
         const toDate = future.toISOString().split('T')[0]
-        const upRes = await fetch(`${BASE_URL}/api/shifts?status=scheduled&from=${today}&to=${toDate}&page=1&limit=10`, {
+        const upRes = await fetch(`${BASE_URL}/api/shifts?from=${today}&to=${toDate}&page=1&limit=10`, {
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
         })
         if (upRes.ok) {
@@ -113,10 +113,13 @@ function Dashboard() {
     )
   }
 
-  const shiftTime = currentShift ? `${currentShift.startTime} - ${currentShift.endTime}` : '—'
-  const shiftDate = currentShift ? formatDate(currentShift.date) : '—'
-  const teamName = currentShift?.teamName?.replace(/ Team$/i, '') || '—'
-  const shiftTypeName = currentShift ? getShiftType(currentShift.startTime) : '—'
+  const displayShift = currentShift || upcomingShifts[0] || null
+  const isUpcoming = !currentShift && !!upcomingShifts[0]
+
+  const shiftTime = displayShift ? `${displayShift.startTime} - ${displayShift.endTime}` : '—'
+  const shiftDate = displayShift ? formatDate(displayShift.date) : '—'
+  const teamName = displayShift?.teamName?.replace(/ Team$/i, '') || '—'
+  const shiftTypeName = displayShift ? getShiftType(displayShift.startTime) : '—'
 
   return (
     <div className="dashboard">
@@ -129,7 +132,7 @@ function Dashboard() {
       <div className='shift-container'>
         <div className="shift-header animate-fade-in">
           <div className="shift-info">
-            <span className="shift-label">İndiki Növbə</span>
+            <span className="shift-label">{isUpcoming ? 'Növbəti Növbə' : 'İndiki Növbə'}</span>
             <h1 className="shift-time">{shiftTime}</h1>
             <span className="shift-date">{shiftDate}</span>
           </div>
@@ -137,7 +140,7 @@ function Dashboard() {
             <div className="status-circle pulse">
               <Clock size={28} />
             </div>
-            <span className="status-label">{currentShift ? 'Aktiv' : 'Yoxdur'}</span>
+            <span className="status-label">{currentShift ? 'Aktiv' : isUpcoming ? 'Planlaşdırılıb' : 'Yoxdur'}</span>
             <span className="status-time">{currentShift ? `${calcTimeLeft()}h qalıb` : '—'}</span>
           </div>
         </div>
