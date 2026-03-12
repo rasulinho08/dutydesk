@@ -10,7 +10,20 @@ export default function AdminStatistics() {
   const [dashboardData, setDashboardData] = useState(null)
   const [teams, setTeams] = useState([])
   const [upcomingShifts, setUpcomingShifts] = useState([])
+  const [shiftHistory, setShiftHistory] = useState([])
 
+  // Filter state
+  const [dateFrom, setDateFrom] = useState(() => {
+    const d = new Date()
+    d.setDate(d.getDate() - 30)
+    return d.toISOString().split('T')[0]
+  })
+  const [dateTo, setDateTo] = useState(() => new Date().toISOString().split('T')[0])
+  const [selectedTeam, setSelectedTeam] = useState('Bütün Komandalar')
+  const [historySearch, setHistorySearch] = useState('')
+  const [historyTeamFilter, setHistoryTeamFilter] = useState('Bütün Komandalar')
+
+  // Fetch dashboard + teams (once)
   useEffect(() => {
     const fetchDashboard = async () => {
       if (!token) return
@@ -50,10 +63,55 @@ export default function AdminStatistics() {
       }
     }
 
+    fetchDashboard()
+    fetchTeams()
+  }, [token])
+
+  // Fetch shift history with filters
+  useEffect(() => {
+    const fetchShifts = async () => {
+      if (!token) return
+      try {
+        const params = new URLSearchParams({
+          from: dateFrom,
+          to: dateTo,
+          page: '1',
+          limit: '50'
+        })
+
+        // Find team UUID if a specific team is selected
+        if (selectedTeam !== 'Bütün Komandalar') {
+          const teamObj = teams.find(t => {
+            const n = t.name.toLowerCase()
+            return n.includes(selectedTeam.toLowerCase())
+          })
+          if (teamObj) params.set('team', teamObj.id)
+        }
+
+        const res = await fetch(`https://dutydesk-g3ma.onrender.com/api/admin/shifts?${params.toString()}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        if (res.ok) {
+          const json = await res.json()
+          if (json.success) {
+            setShiftHistory(json.data?.shifts || json.data?.items || [])
+          }
+        }
+      } catch (err) {
+        console.error('Shifts fetch xətası:', err)
+      }
+    }
+    fetchShifts()
+  }, [token, dateFrom, dateTo, selectedTeam, teams])
+
+  // Fetch upcoming shifts from schedules
+  useEffect(() => {
     const fetchSchedules = async () => {
       if (!token) return
       try {
-        // Get current ISO week
         const now = new Date()
         const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
         d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7))
@@ -78,12 +136,13 @@ export default function AdminStatistics() {
                 Object.entries(shiftTypes).forEach(([type, time]) => {
                   const shiftList = dayData.shifts?.[type] || []
                   shiftList.forEach(s => {
+                    const teamShort = s.teamName?.replace(/ Team$/i, '') || 'APM'
                     shifts.push({
                       date: dayData.date,
                       time,
-                      team: s.teamName?.replace(/ Team$/i, '') || 'APM',
-                      teamColor: (s.teamName?.toLowerCase().includes('noc') ? 'noc' :
-                        s.teamName?.toLowerCase().includes('soc') ? 'soc' : 'apm'),
+                      team: teamShort,
+                      teamColor: teamShort.toLowerCase() === 'noc' ? 'noc' :
+                        teamShort.toLowerCase() === 'soc' ? 'soc' : 'apm',
                       worker: s.userName || 'N/A'
                     })
                   })
@@ -97,9 +156,6 @@ export default function AdminStatistics() {
         console.error('Schedules fetch xətası:', err)
       }
     }
-
-    fetchDashboard()
-    fetchTeams()
     fetchSchedules()
   }, [token])
 
@@ -109,22 +165,34 @@ export default function AdminStatistics() {
   const totalShifts = (overview.todayShifts || 0)
   const completedShifts = (overview.completedHandovers || 0)
   const incompleteShifts = (overview.pendingHandovers || 0) + (overview.emptyShifts || 0)
-  
+
+  // Filter shift history for display
+  const filteredHistory = shiftHistory.filter(s => {
+    const teamMatch = historyTeamFilter === 'Bütün Komandalar' ||
+      (s.teamName?.toLowerCase().includes(historyTeamFilter.toLowerCase()))
+    const searchMatch = !historySearch ||
+      (s.userName?.toLowerCase().includes(historySearch.toLowerCase())) ||
+      (s.teamName?.toLowerCase().includes(historySearch.toLowerCase()))
+    return teamMatch && searchMatch
+  })
+
+  // Filter upcoming shifts by selected team
+  const filteredUpcoming = selectedTeam === 'Bütün Komandalar'
+    ? upcomingShifts
+    : upcomingShifts.filter(s => s.team === selectedTeam)
+
   const handleExportPDF = () => {
     const doc = new jsPDF()
-    
-    // Add title
+
     doc.setFontSize(20)
     doc.text('Umumi Statistika', 14, 20)
-    
-    // Add date
+
     doc.setFontSize(10)
     doc.text(`Tarix: ${new Date().toLocaleDateString('az-AZ')}`, 14, 28)
-    
-    // Add stats
+
     doc.setFontSize(14)
     doc.text('Statistik Melumatlar', 14, 40)
-    
+
     const statsData = stats.map(stat => [
       stat.title,
       stat.value.toString()
@@ -134,7 +202,7 @@ export default function AdminStatistics() {
       startY: 45,
       head: [['Gostrici', 'Deyer']],
       body: statsData,
-      styles: { 
+      styles: {
         font: 'helvetica',
         fontSize: 10
       },
@@ -147,11 +215,10 @@ export default function AdminStatistics() {
         fillColor: [245, 245, 245]
       }
     })
-    
-    // Save PDF
+
     doc.save(`statistika-${new Date().toLocaleDateString('az-AZ')}.pdf`)
   }
-  
+
   const stats = [
     {
       title: "Ümumi Növbələr (Bu ay)",
@@ -190,22 +257,23 @@ export default function AdminStatistics() {
         <h2>Ümumi statistika</h2>
 
         <div className="filters">
-          <input type="date" defaultValue="2025-11-27" />
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={e => setDateFrom(e.target.value)}
+          />
           <span>→</span>
-          <input type="date" defaultValue="2025-12-03" />
+          <input
+            type="date"
+            value={dateTo}
+            onChange={e => setDateTo(e.target.value)}
+          />
 
-          <select>
+          <select value={selectedTeam} onChange={e => setSelectedTeam(e.target.value)}>
             <option>Bütün Komandalar</option>
             <option>NOC</option>
             <option>APM</option>
             <option>SOC</option>
-          </select>
-
-          <select>
-            <option>Həftəlik</option>
-            <option>Günlük</option>
-            <option>Aylıq</option>
-            <option>Custom</option>
           </select>
         </div>
       </div>
@@ -248,11 +316,15 @@ export default function AdminStatistics() {
         <div className="filters-row">
           <div className="search-input-wrapper">
             <Search size={18} className="search-icon" />
-            <input placeholder="İşçi və ya qeyd axtar..." />
+            <input
+              placeholder="İşçi və ya qeyd axtar..."
+              value={historySearch}
+              onChange={e => setHistorySearch(e.target.value)}
+            />
           </div>
           <div className="team-filter-wrapper">
             <Filter size={18} className="filter-icon" />
-            <select>
+            <select value={historyTeamFilter} onChange={e => setHistoryTeamFilter(e.target.value)}>
               <option>Bütün Komandalar</option>
               <option>APM</option>
               <option>NOC</option>
@@ -260,13 +332,43 @@ export default function AdminStatistics() {
             </select>
           </div>
         </div>
+
+        {/* Shift history list */}
+        {filteredHistory.length > 0 ? (
+          <div className="shift-history-list">
+            {filteredHistory.map((shift, i) => {
+              const teamShort = shift.teamName?.replace(/ Team$/i, '') || 'N/A'
+              const teamColor = teamShort.toLowerCase() === 'noc' ? 'noc' :
+                teamShort.toLowerCase() === 'soc' ? 'soc' : 'apm'
+              return (
+                <div key={shift.id || i} className="shift-item">
+                  <div className="shift-header">
+                    <div className={`badge ${teamColor}`}>{teamShort}</div>
+                    <span className="shift-date-stat">
+                      {shift.date} &nbsp; {shift.startTime || ''} - {shift.endTime || ''}
+                    </span>
+                  </div>
+                  <div className="employee-info">
+                    <User size={18} className="employee-icon" />
+                    <strong className="employee-name">{shift.userName || 'N/A'}</strong>
+                    <span className={`status-badge-stat ${shift.status?.toLowerCase()}`}>
+                      {shift.status || ''}
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <p style={{ padding: '16px', color: '#888' }}>Tarixçə tapılmadı</p>
+        )}
       </div>
 
       {/* UPCOMING SHIFTS */}
       <div className="card-shifts">
         <h3>Gələcək Növbələr</h3>
-        {upcomingShifts.length > 0 ? (
-          upcomingShifts.map((shift, i) => (
+        {filteredUpcoming.length > 0 ? (
+          filteredUpcoming.map((shift, i) => (
             <div key={i} className="shift-item">
               <div className="shift-header">
                 <div className={`badge ${shift.teamColor}`}>{shift.team}</div>
