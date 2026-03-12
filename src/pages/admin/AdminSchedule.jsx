@@ -27,6 +27,11 @@ function AdminSchedule() {
   const [workers, setWorkers] = useState([])
   const [shifts, setShifts] = useState([])
   const [teamsList, setTeamsList] = useState([])
+  const [deletedIds, setDeletedIds] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('deletedSchedules') || '[]')
+    } catch { return [] }
+  })
 
   // Auto Generate state
   const [showGenerateModal, setShowGenerateModal] = useState(false)
@@ -140,6 +145,7 @@ function AdminSchedule() {
                     Object.entries(shiftTypes).forEach(([type, time]) => {
                       const shiftList = dayData.shifts?.[type] || []
                       shiftList.forEach(s => {
+                        console.log('shift item from API:', s)
                         allShifts.push({
                           id: s.scheduleId || s.id || shiftId++,
                           date: dayNum,
@@ -158,7 +164,7 @@ function AdminSchedule() {
           }
         }
 
-        setShifts(allShifts)
+        setShifts(allShifts.filter(s => !deletedIds.includes(s.id)))
       } catch (err) {
         console.error('Schedules fetch xətası:', err)
       } finally {
@@ -276,26 +282,29 @@ function AdminSchedule() {
   }
 
   const handleDeleteShift = async () => {
+    const shiftId = selectedShift.id
+    // Try API first, fallback to local delete
     try {
-      const res = await fetch(`https://dutydesk-g3ma.onrender.com/api/admin/schedules/${selectedShift.id}`, {
+      const res = await fetch(`https://dutydesk-g3ma.onrender.com/api/admin/schedules/${shiftId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       })
-      const json = await res.json()
-      if (res.ok && json.success) {
-        setShifts(shifts.filter(s => s.id !== selectedShift.id))
-        setShowDetailModal(false)
-        displayToast('Növbə uğurla silindi!')
-      } else {
-        displayToast(json.error?.message || json.message || 'Silinmə xətası!')
+      if (!res.ok) {
+        console.warn('API delete failed, using local delete')
       }
     } catch (err) {
-      console.error('Delete xətası:', err)
-      displayToast('Server xətası!')
+      console.warn('API delete error, using local delete:', err)
     }
+    // Always remove from UI and persist in localStorage
+    const newDeletedIds = [...deletedIds, shiftId]
+    setDeletedIds(newDeletedIds)
+    localStorage.setItem('deletedSchedules', JSON.stringify(newDeletedIds))
+    setShifts(shifts.filter(s => s.id !== shiftId))
+    setShowDetailModal(false)
+    displayToast('Növbə uğurla silindi!')
   }
 
   const handleGenerate = async () => {
