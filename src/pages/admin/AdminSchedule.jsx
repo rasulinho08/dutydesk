@@ -141,7 +141,7 @@ function AdminSchedule() {
                       const shiftList = dayData.shifts?.[type] || []
                       shiftList.forEach(s => {
                         allShifts.push({
-                          id: shiftId++,
+                          id: s.scheduleId || s.id || shiftId++,
                           date: dayNum,
                           team: s.teamName?.replace(/ Team$/i, '') || 'APM',
                           time,
@@ -275,10 +275,27 @@ function AdminSchedule() {
     displayToast('✓ Növbə uğurla əlavə edildi!')
   }
 
-  const handleDeleteShift = () => {
-    setShifts(shifts.filter(s => s.id !== selectedShift.id))
-    setShowDetailModal(false)
-    displayToast('Növbə silindi!')
+  const handleDeleteShift = async () => {
+    try {
+      const res = await fetch(`https://dutydesk-g3ma.onrender.com/api/admin/schedules/${selectedShift.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      const json = await res.json()
+      if (res.ok && json.success) {
+        setShifts(shifts.filter(s => s.id !== selectedShift.id))
+        setShowDetailModal(false)
+        displayToast('Növbə uğurla silindi!')
+      } else {
+        displayToast(json.error?.message || json.message || 'Silinmə xətası!')
+      }
+    } catch (err) {
+      console.error('Delete xətası:', err)
+      displayToast('Server xətası!')
+    }
   }
 
   const handleGenerate = async () => {
@@ -423,7 +440,11 @@ function AdminSchedule() {
                 {dayShifts.length > 0 && (
                   <div className="shifts-container">
                     {dayShifts.map(shift => (
-                      <div key={shift.id} className={`shift-card ${shift.team.toLowerCase()}`}>
+                      <div key={shift.id} className={`shift-card ${shift.team.toLowerCase()}`} onClick={e => {
+                        e.stopPropagation()
+                        setSelectedShift(shift)
+                        setShowDetailModal(true)
+                      }}>
                         <div className="shift-card-header">
                           <span className="shift-worker-name">● {shift.worker}</span>
                           <span className={`team-badge-mini ${shift.team.toLowerCase()}`}>{shift.team}</span>
