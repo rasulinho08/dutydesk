@@ -84,6 +84,17 @@ function AdminDashboard() {
 
         setDashboardData(json.data || {})
         setAlerts(json.data?.alerts || [])
+        // Populate notifications from alerts
+        const alertNotifs = (json.data?.alerts || [])
+          .filter(a => a.type === 'empty-shift')
+          .map(a => ({
+            id: a.id,
+            team: a.team || '',
+            message: a.message || `${a.team} komandası üçün növbə boşdur`,
+            type: 'warning',
+            read: false
+          }))
+        setNotifications(alertNotifs)
         console.log('dashboard:', json.data)
 
       } catch (err) {
@@ -126,6 +137,159 @@ function AdminDashboard() {
     fetchTeams()
   }, [token])
 
+  // Fetch workers from API (for assign modal)
+  useEffect(() => {
+    const fetchWorkers = async () => {
+      if (!token) return
+      try {
+        const res = await fetch('https://dutydesk-g3ma.onrender.com/api/admin/users?page=1&limit=50', {
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+        })
+        if (res.ok) {
+          const json = await res.json()
+          if (json.success && json.data?.users) {
+            const mapped = json.data.users
+              .filter(u => u.role === 'employee' && u.isActive)
+              .map(u => ({
+                id: u.id,
+                name: `${u.firstName}${u.lastName ? ' ' + u.lastName : ''}`.trim(),
+                email: u.email,
+                team: u.team?.name?.replace(/ Team$/i, '') || 'Digər',
+                status: 'Əlçatandır'
+              }))
+            setWorkers(mapped)
+          }
+        }
+      } catch (err) {
+        console.error('Workers fetch xətası:', err)
+      }
+    }
+    fetchWorkers()
+  }, [token])
+
+  // Fetch upcoming shifts from API
+  useEffect(() => {
+    const fetchUpcomingShifts = async () => {
+      if (!token) return
+      try {
+        const today = new Date()
+        const fromDate = today.toISOString().split('T')[0]
+        const toDate = new Date(today.getTime() + 48 * 60 * 60 * 1000).toISOString().split('T')[0]
+
+        const params = new URLSearchParams({
+          from: fromDate,
+          to: toDate,
+          page: '1',
+          limit: '20'
+        })
+
+        const res = await fetch(`https://dutydesk-g3ma.onrender.com/api/admin/shifts?${params.toString()}`, {
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+        })
+        if (res.ok) {
+          const json = await res.json()
+          console.log('upcoming shifts (dashboard):', json)
+          if (json.success && json.data) {
+            const shifts = json.data.shifts || json.data.items || json.data || []
+            const mapped = (Array.isArray(shifts) ? shifts : []).map((s, idx) => {
+              const teamShort = s.teamName?.toLowerCase().includes('noc') ? 'NOC'
+                : s.teamName?.toLowerCase().includes('soc') ? 'SOC'
+                : s.teamName?.toLowerCase().includes('apm') ? 'APM' : s.teamName?.replace(/ Team$/i, '') || 'APM'
+
+              return {
+                id: s.id || idx + 1,
+                date: s.date || '',
+                fullDate: s.date || '',
+                team: teamShort,
+                time: (s.startTime && s.endTime) ? `${s.startTime} - ${s.endTime}` : '—',
+                worker: s.userName || 'Boş',
+                status: s.userName ? 'Planlaşdırılıb' : 'Boş'
+              }
+            })
+            setUpcomingShifts(mapped)
+          }
+        }
+      } catch (err) {
+        console.error('Upcoming shifts fetch xətası:', err)
+      }
+    }
+    fetchUpcomingShifts()
+  }, [token])
+
+  // Fetch today's schedule for timeline from API
+  useEffect(() => {
+    const fetchTodaySchedule = async () => {
+      if (!token) return
+      try {
+        const today = new Date().toISOString().split('T')[0]
+        const params = new URLSearchParams({
+          from: today,
+          to: today,
+          page: '1',
+          limit: '50'
+        })
+
+        const res = await fetch(`https://dutydesk-g3ma.onrender.com/api/admin/shifts?${params.toString()}`, {
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+        })
+        if (res.ok) {
+          const json = await res.json()
+          console.log('today schedule (timeline):', json)
+          if (json.success && json.data) {
+            const shifts = json.data.shifts || json.data.items || json.data || []
+            if (Array.isArray(shifts) && shifts.length > 0) {
+              const timeSlots = {
+                '00:00 - 08:00': { night: true },
+                '08:00 - 16:00': { day: true },
+                '16:00 - 24:00': { evening: true }
+              }
+
+              const teamColors = {
+                APM: { active: '#1e5a8a', inactive: '#e0e7ff' },
+                NOC: { active: '#22c55e', inactive: '#dcfce7' },
+                SOC: { active: '#a855f7', inactive: '#f3e8ff' }
+              }
+
+              const teamShifts = { APM: {}, NOC: {}, SOC: {} }
+
+              shifts.forEach(s => {
+                const teamName = s.teamName?.toLowerCase().includes('noc') ? 'NOC'
+                  : s.teamName?.toLowerCase().includes('soc') ? 'SOC'
+                  : s.teamName?.toLowerCase().includes('apm') ? 'APM' : null
+
+                if (!teamName) return
+
+                // Map startTime/endTime to time slot
+                const startHour = parseInt(s.startTime?.split(':')[0] || '0')
+                let slot = '08:00 - 16:00'
+                if (startHour >= 0 && startHour < 8) slot = '00:00 - 08:00'
+                else if (startHour >= 16) slot = '16:00 - 24:00'
+
+                teamShifts[teamName][slot] = s.userName || '—'
+              })
+
+              setTimelineData(prev => prev.map(row => {
+                const team = row.team
+                const colors = teamColors[team] || teamColors.APM
+                return {
+                  ...row,
+                  shifts: row.shifts.map(shift => ({
+                    ...shift,
+                    worker: teamShifts[team]?.[shift.time] || '—',
+                    color: teamShifts[team]?.[shift.time] ? colors.active : colors.inactive
+                  }))
+                }
+              }))
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Today schedule fetch xətası:', err)
+      }
+    }
+    fetchTodaySchedule()
+  }, [token])
+
   // Helper to get memberCount by team name
   const getTeamMemberCount = (shortName) => {
     const team = teams.find(t => {
@@ -163,17 +327,11 @@ function AdminDashboard() {
 
 
 
-  const [notifications, setNotifications] = useState([
-    { id: 1, team: 'APM', message: 'APM komandası üçün bu gün gecə növbəsi boşdur (16:00-24:00)', type: 'warning', read: false },
-    { id: 2, team: 'SOC', message: 'SOC komandası üçün sabah gündüz növbəsi boşdur (08:00-16:00)', type: 'warning', read: false }
-  ])
+  const [notifications, setNotifications] = useState([])
   const [showSuccessToast, setShowSuccessToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
 
   useEffect(() => {
-    // Simulate loading
-    setTimeout(() => setIsLoading(false), 800)
-
     // Update time every minute
     const timer = setInterval(() => {
       setCurrentTime(new Date())
@@ -207,25 +365,25 @@ function AdminDashboard() {
     {
       team: 'APM',
       shifts: [
-        { time: '00:00 - 08:00', worker: 'Əli Məmmədov', color: '#e0e7ff' },
-        { time: '08:00 - 16:00', worker: 'Leyla Həsənova', color: '#1e5a8a' },
-        { time: '16:00 - 24:00', worker: 'Rəşad İsmayılov', color: '#e0e7ff' }
+        { time: '00:00 - 08:00', worker: '—', color: '#e0e7ff' },
+        { time: '08:00 - 16:00', worker: '—', color: '#1e5a8a' },
+        { time: '16:00 - 24:00', worker: '—', color: '#e0e7ff' }
       ]
     },
     {
       team: 'NOC',
       shifts: [
-        { time: '00:00 - 08:00', worker: 'Əli Məmmədov', color: '#dcfce7' },
-        { time: '08:00 - 16:00', worker: 'Leyla Həsənova', color: '#22c55e' },
-        { time: '16:00 - 24:00', worker: 'Rəşad İsmayılov', color: '#dcfce7' }
+        { time: '00:00 - 08:00', worker: '—', color: '#dcfce7' },
+        { time: '08:00 - 16:00', worker: '—', color: '#22c55e' },
+        { time: '16:00 - 24:00', worker: '—', color: '#dcfce7' }
       ]
     },
     {
       team: 'SOC',
       shifts: [
-        { time: '00:00 - 08:00', worker: 'Əli Məmmədov', color: '#f3e8ff' },
-        { time: '08:00 - 16:00', worker: 'Leyla Həsənova', color: '#a855f7' },
-        { time: '16:00 - 24:00', worker: 'Rəşad İsmayılov', color: '#f3e8ff' }
+        { time: '00:00 - 08:00', worker: '—', color: '#f3e8ff' },
+        { time: '08:00 - 16:00', worker: '—', color: '#a855f7' },
+        { time: '16:00 - 24:00', worker: '—', color: '#f3e8ff' }
       ]
     }
   ])
@@ -251,19 +409,9 @@ function AdminDashboard() {
     return () => clearInterval(interval)
   }, [currentTime])
 
-  const [upcomingShifts, setUpcomingShifts] = useState([
-    { id: 1, date: 'Sabah', fullDate: '12-01-2026', team: 'APM', time: '08:00 - 16:00', worker: 'Əli Quliyev', status: 'Planlaşdırılıb' },
-    { id: 2, date: 'Sabah', fullDate: '13-01-2026', team: 'NOC', time: '08:00 - 16:00', worker: 'Elvin Əliyev', status: 'Planlaşdırılıb' },
-    { id: 3, date: 'Sabah', fullDate: '12-01-2026', team: 'SOC', time: '16:00 - 00:00', worker: 'Elvin Əliyev', status: 'Boş' }
-  ])
+  const [upcomingShifts, setUpcomingShifts] = useState([])
 
-  const workers = [
-    { id: 1, name: 'Leyla Məmmədova', email: 'leyla@company.az', team: 'APM', status: 'Növbədə' },
-    { id: 2, name: 'Əli Quliyev', email: 'ali@company.az', team: 'APM', status: 'Əlçatandır' },
-    { id: 3, name: 'Nigar Həmidova', email: 'nigar@company.az', team: 'APM', status: 'İstirahətdə' },
-    { id: 4, name: 'Rəşad İbrahimov', email: 'rashad@company.az', team: 'NOC', status: 'Əlçatandır' },
-    { id: 5, name: 'Günəl Həsənova', email: 'gunel@company.az', team: 'SOC', status: 'Əlçatandır' }
-  ]
+  const [workers, setWorkers] = useState([])
 
   const filteredWorkers = workers.filter(w =>
     w.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
