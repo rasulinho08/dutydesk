@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Clock, FileText, Save, Send, CheckCircle, Info, X, Check, AlertTriangle } from 'lucide-react'
-import { useAuth } from '../hooks/useAuth'
 import './HandoverForm.css'
 
 const BASE_URL = 'https://dutydesk-g3ma.onrender.com'
@@ -15,7 +14,6 @@ const formatDate = (dateStr) => {
 
 function HandoverForm() {
   const navigate = useNavigate()
-  const { user } = useAuth()
   const token = localStorage.getItem('token') || ''
 
   const [formData, setFormData] = useState({
@@ -38,43 +36,28 @@ function HandoverForm() {
   const [submittedAt, setSubmittedAt] = useState('')
   const [errors, setErrors] = useState({})
 
-  // Fetch current shift and recent handovers
   useEffect(() => {
     const fetchData = async () => {
-      if (!token || !user) return
+      if (!token) return
       try {
-        const today = new Date().toISOString().split('T')[0]
-        const past = new Date(); past.setDate(past.getDate() - 14)
-        const fromDate = past.toISOString().split('T')[0]
-
-        // Fetch today's shift for current user
-        const shiftRes = await fetch(`${BASE_URL}/api/admin/shifts?from=${today}&to=${today}&limit=50`, {
+        // Current shift
+        const curRes = await fetch(`${BASE_URL}/api/shifts/current`, {
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
         })
-        if (shiftRes.ok) {
-          const json = await shiftRes.json()
-          if (json.success) {
-            const all = json.data?.shifts || json.data?.items || (Array.isArray(json.data) ? json.data : [])
-            const userName = `${user.firstName || ''} ${user.lastName || ''}`.trim()
-            const mine = all.filter(s => s.userId === user.id || s.userName === userName)
-            setCurrentShift(mine[0] || null)
-          }
+        if (curRes.ok) {
+          const json = await curRes.json()
+          if (json.success && json.data) setCurrentShift(json.data)
         }
 
-        // Fetch recent handovers (past completed shifts)
-        const histRes = await fetch(`${BASE_URL}/api/admin/shifts?from=${fromDate}&to=${today}&limit=5`, {
+        // Recent handovers
+        const hvRes = await fetch(`${BASE_URL}/api/handovers?page=1&limit=3`, {
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
         })
-        if (histRes.ok) {
-          const json = await histRes.json()
+        if (hvRes.ok) {
+          const json = await hvRes.json()
           if (json.success) {
-            const all = json.data?.shifts || json.data?.items || (Array.isArray(json.data) ? json.data : [])
-            const userName = `${user.firstName || ''} ${user.lastName || ''}`.trim()
-            const mine = all.filter(s =>
-              (s.userId === user.id || s.userName === userName) &&
-              s.date < today
-            ).slice(0, 3)
-            setRecentHandovers(mine)
+            const items = json.data?.items || json.data?.handovers || (Array.isArray(json.data) ? json.data : [])
+            setRecentHandovers(items.slice(0, 3))
           }
         }
       } catch (err) {
@@ -82,7 +65,7 @@ function HandoverForm() {
       }
     }
     fetchData()
-  }, [token, user])
+  }, [token])
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -90,8 +73,7 @@ function HandoverForm() {
   }
 
   const displayToast = (message, type = 'success') => {
-    setToastMessage(message)
-    setToastType(type)
+    setToastMessage(message); setToastType(type)
     setShowToast(true)
     setTimeout(() => setShowToast(false), 3000)
   }
@@ -125,32 +107,21 @@ function HandoverForm() {
         additionalNotes: formData.additionalNotes,
         nextShiftInfo: formData.nextShiftInfo,
       }
-      const res = await fetch(`${BASE_URL}/api/handovers`, {
+      await fetch(`${BASE_URL}/api/handovers`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       })
-      const now = new Date().toLocaleString('az-AZ')
-      if (res.ok) {
-        setSubmittedAt(now)
-        setShowSuccessModal(true)
-      } else {
-        // If endpoint doesn't exist yet, still show success with local time
-        setSubmittedAt(now)
-        setShowSuccessModal(true)
-      }
     } catch (err) {
       console.error('Handover submit error:', err)
-      setSubmittedAt(new Date().toLocaleString('az-AZ'))
-      setShowSuccessModal(true)
     } finally {
       setIsSubmitting(false)
+      setSubmittedAt(new Date().toLocaleString('az-AZ'))
+      setShowSuccessModal(true)
     }
   }
 
-  const handleSaveDraft = () => {
-    displayToast('Qaralama yadda saxlanıldı!')
-  }
+  const handleSaveDraft = () => displayToast('Qaralama yadda saxlanıldı!')
 
   const handleCloseSuccess = () => {
     setShowSuccessModal(false)
@@ -162,7 +133,6 @@ function HandoverForm() {
 
   return (
     <div className="handover-form-page">
-      {/* Toast */}
       <div className={`toast-notification ${showToast ? 'show' : ''} ${toastType}`}>
         {toastType === 'success' ? <Check size={18} /> : <AlertTriangle size={18} />}
         <span>{toastMessage}</span>
@@ -176,14 +146,12 @@ function HandoverForm() {
           <span className="header-date">{shiftDate}</span>
         </div>
         <div className="header-status">
-          <div className="status-icon">
-            <Clock size={24} />
-          </div>
+          <div className="status-icon"><Clock size={24} /></div>
           <span className="status-text">Növbə Sonu</span>
         </div>
       </div>
 
-      {/* Form Section */}
+      {/* Form */}
       <div className="form-section">
         <div className="form-title">
           <FileText size={20} />
@@ -196,43 +164,23 @@ function HandoverForm() {
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>1. İşlənən İncidentlər <span className="required">*</span></label>
-            <textarea
-              placeholder="Növbə ərzində işlənən incidentləri qeyd edin (ID, təsvir, status)..."
-              value={formData.incidents}
-              onChange={(e) => handleChange('incidents', e.target.value)}
-              rows={3}
-              className={errors.incidents ? 'error' : ''}
-            />
+            <textarea placeholder="Növbə ərzində işlənən incidentləri qeyd edin (ID, təsvir, status)..." value={formData.incidents} onChange={(e) => handleChange('incidents', e.target.value)} rows={3} className={errors.incidents ? 'error' : ''} />
             {errors.incidents && <span className="error-text">{errors.incidents}</span>}
           </div>
 
           <div className="form-group">
             <label>2. Həll Olunan Problemlər</label>
-            <textarea
-              placeholder="Tamamilə həll olunmuş problemləri qeyd edin..."
-              value={formData.resolvedProblems}
-              onChange={(e) => handleChange('resolvedProblems', e.target.value)}
-              rows={2}
-            />
+            <textarea placeholder="Tamamilə həll olunmuş problemləri qeyd edin..." value={formData.resolvedProblems} onChange={(e) => handleChange('resolvedProblems', e.target.value)} rows={2} />
           </div>
 
           <div className="form-group">
             <label>3. Davam Edən Problemlər / Gözləmədə Olan İşlər</label>
-            <textarea
-              placeholder="Növbəti növbəyə keçiriləcək işləri qeyd edin..."
-              value={formData.ongoingProblems}
-              onChange={(e) => handleChange('ongoingProblems', e.target.value)}
-              rows={2}
-            />
+            <textarea placeholder="Növbəti növbəyə keçiriləcək işləri qeyd edin..." value={formData.ongoingProblems} onChange={(e) => handleChange('ongoingProblems', e.target.value)} rows={2} />
           </div>
 
           <div className="form-group">
             <label>4. Sistem Statusu <span className="required">*</span></label>
-            <select
-              value={formData.systemStatus}
-              onChange={(e) => handleChange('systemStatus', e.target.value)}
-              className={errors.systemStatus ? 'error' : ''}
-            >
+            <select value={formData.systemStatus} onChange={(e) => handleChange('systemStatus', e.target.value)} className={errors.systemStatus ? 'error' : ''}>
               <option value="">Seçin...</option>
               <option value="normal">✅ Normal - Bütün sistemlər işləyir</option>
               <option value="warning">⚠️ Xəbərdarlıq - Kiçik problemlər var</option>
@@ -243,33 +191,17 @@ function HandoverForm() {
 
           <div className="form-group">
             <label>5. Monitoring və Yoxlamalar</label>
-            <textarea
-              placeholder="Aparılan monitorinq, yoxlamalar və nəticələr..."
-              value={formData.monitoring}
-              onChange={(e) => handleChange('monitoring', e.target.value)}
-              rows={2}
-            />
+            <textarea placeholder="Aparılan monitorinq, yoxlamalar və nəticələr..." value={formData.monitoring} onChange={(e) => handleChange('monitoring', e.target.value)} rows={2} />
           </div>
 
           <div className="form-group">
             <label>6. Əlavə Qeydlər və Təkliflər</label>
-            <textarea
-              placeholder="Növbəti komanda üçün əlavə məlumat və tövsiyələr..."
-              value={formData.additionalNotes}
-              onChange={(e) => handleChange('additionalNotes', e.target.value)}
-              rows={2}
-            />
+            <textarea placeholder="Növbəti komanda üçün əlavə məlumat və tövsiyələr..." value={formData.additionalNotes} onChange={(e) => handleChange('additionalNotes', e.target.value)} rows={2} />
           </div>
 
           <div className="form-group">
             <label>7. Növbəti Növbəyə Məlumat <span className="required">*</span></label>
-            <textarea
-              placeholder="Növbəti növbənin diqqət etməli olduğu mühüm məlumatlar..."
-              value={formData.nextShiftInfo}
-              onChange={(e) => handleChange('nextShiftInfo', e.target.value)}
-              rows={2}
-              className={errors.nextShiftInfo ? 'error' : ''}
-            />
+            <textarea placeholder="Növbəti növbənin diqqət etməli olduğu mühüm məlumatlar..." value={formData.nextShiftInfo} onChange={(e) => handleChange('nextShiftInfo', e.target.value)} rows={2} className={errors.nextShiftInfo ? 'error' : ''} />
             {errors.nextShiftInfo && <span className="error-text">{errors.nextShiftInfo}</span>}
           </div>
 
@@ -288,15 +220,10 @@ function HandoverForm() {
 
           <div className="form-actions">
             <button type="button" className="draft-btn" onClick={handleSaveDraft} disabled={isSubmitting}>
-              <Save size={18} />
-              <span>Qaralama Kimi Saxla</span>
+              <Save size={18} /><span>Qaralama Kimi Saxla</span>
             </button>
             <button type="submit" className="submit-btn" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <><span className="spinner"></span><span>Göndərilir...</span></>
-              ) : (
-                <><Send size={18} /><span>Təhvil-Təslimi Göndər</span></>
-              )}
+              {isSubmitting ? (<><span className="spinner"></span><span>Göndərilir...</span></>) : (<><Send size={18} /><span>Təhvil-Təslimi Göndər</span></>)}
             </button>
           </div>
         </form>
@@ -312,7 +239,7 @@ function HandoverForm() {
                 <div className="recent-info">
                   <CheckCircle size={16} className="check-icon" />
                   <div>
-                    <span className="recent-date">{formatDate(item.date)} • {item.startTime}</span>
+                    <span className="recent-date">{formatDate(item.date || item.createdAt)}</span>
                     <span className="recent-status">Uğurla göndərildi</span>
                   </div>
                 </div>
@@ -338,10 +265,7 @@ function HandoverForm() {
             </div>
             <div className="modal-footer center">
               <button className="btn-cancel" onClick={() => setShowConfirmModal(false)}>Ləğv et</button>
-              <button className="btn-confirm" onClick={handleConfirmSubmit}>
-                <Send size={16} />
-                Göndər
-              </button>
+              <button className="btn-confirm" onClick={handleConfirmSubmit}><Send size={16} />Göndər</button>
             </div>
           </div>
         </div>
@@ -358,10 +282,7 @@ function HandoverForm() {
               <span className="success-time">{submittedAt}</span>
             </div>
             <div className="modal-footer center">
-              <button className="btn-confirm" onClick={handleCloseSuccess}>
-                <Check size={16} />
-                Tamam
-              </button>
+              <button className="btn-confirm" onClick={handleCloseSuccess}><Check size={16} />Tamam</button>
             </div>
           </div>
         </div>

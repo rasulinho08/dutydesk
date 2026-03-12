@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react'
 import {
-  Clock, Calendar, ArrowRight, FileText, PlusCircle, CheckCircle, X, Check, RefreshCw,
-  LogIn, LogOut, AlertTriangle
+  Clock, Calendar, PlusCircle, X, Check, RefreshCw
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
 import './Dashboard.css'
 
 const BASE_URL = 'https://dutydesk-g3ma.onrender.com'
@@ -30,7 +28,6 @@ const formatDate = (dateStr) => {
 
 function Dashboard() {
   const navigate = useNavigate()
-  const { user } = useAuth()
   const token = localStorage.getItem('token') || ''
 
   const [isLoading, setIsLoading] = useState(true)
@@ -39,48 +36,45 @@ function Dashboard() {
   const [toastMessage, setToastMessage] = useState('')
   const [noteText, setNoteText] = useState('')
   const [notes, setNotes] = useState([])
-  const [currentTime, setCurrentTime] = useState(new Date())
   const [currentShift, setCurrentShift] = useState(null)
   const [upcomingShifts, setUpcomingShifts] = useState([])
 
-  // Live clock
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000)
-    return () => clearInterval(timer)
-  }, [])
-
-  // Fetch user's shifts
-  useEffect(() => {
-    const fetchShifts = async () => {
-      if (!token || !user) return
+    const fetchData = async () => {
+      if (!token) return
       setIsLoading(true)
       try {
-        const today = new Date().toISOString().split('T')[0]
-        const future = new Date()
-        future.setDate(future.getDate() + 14)
-        const toDate = future.toISOString().split('T')[0]
-
-        const res = await fetch(`${BASE_URL}/api/admin/shifts?from=${today}&to=${toDate}&limit=50`, {
+        // Current shift
+        const currentRes = await fetch(`${BASE_URL}/api/shifts/current`, {
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
         })
-        if (res.ok) {
-          const json = await res.json()
+        if (currentRes.ok) {
+          const json = await currentRes.json()
+          if (json.success && json.data) setCurrentShift(json.data)
+        }
+
+        // Upcoming shifts
+        const today = new Date().toISOString().split('T')[0]
+        const future = new Date(); future.setDate(future.getDate() + 14)
+        const toDate = future.toISOString().split('T')[0]
+        const upRes = await fetch(`${BASE_URL}/api/shifts?status=scheduled&from=${today}&to=${toDate}&page=1&limit=10`, {
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+        })
+        if (upRes.ok) {
+          const json = await upRes.json()
           if (json.success) {
-            const all = json.data?.shifts || json.data?.items || (Array.isArray(json.data) ? json.data : [])
-            const userName = `${user.firstName || ''} ${user.lastName || ''}`.trim()
-            const mine = all.filter(s => s.userId === user.id || s.userName === userName)
-            setCurrentShift(mine.find(s => s.date === today) || null)
-            setUpcomingShifts(mine.filter(s => s.date > today).slice(0, 3))
+            const items = json.data?.items || json.data?.shifts || (Array.isArray(json.data) ? json.data : [])
+            setUpcomingShifts(items.slice(0, 3))
           }
         }
       } catch (err) {
-        console.error('Shifts fetch error:', err)
+        console.error('Dashboard fetch error:', err)
       } finally {
         setIsLoading(false)
       }
     }
-    fetchShifts()
-  }, [token, user])
+    fetchData()
+  }, [token])
 
   const calcTimeLeft = () => {
     if (!currentShift?.endTime) return '—'
@@ -126,7 +120,6 @@ function Dashboard() {
 
   return (
     <div className="dashboard">
-      {/* Toast */}
       <div className={`toast-notification ${showToast ? 'show' : ''}`}>
         <Check size={18} />
         <span>{toastMessage}</span>
@@ -164,7 +157,7 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* Notes List */}
+      {/* Notes */}
       {notes.length > 0 && (
         <div className="notes-list animate-fade-in">
           <h4>Bugünkü Qeydlər</h4>
@@ -189,8 +182,8 @@ function Dashboard() {
           {upcomingShifts.length === 0 ? (
             <p style={{ color: '#888', padding: '8px 0', fontSize: '14px' }}>Gələcək növbə tapılmadı</p>
           ) : (
-            upcomingShifts.map((shift, index) => (
-              <div key={shift.id || index} className="shift-item-dashboard">
+            upcomingShifts.map((shift, i) => (
+              <div key={shift.id || i} className="shift-item-dashboard">
                 <div className="shift-item-info">
                   <span className="shift-item-date">{formatDate(shift.date)}</span>
                   <span className="shift-item-time">
@@ -213,19 +206,12 @@ function Dashboard() {
           <div className="modal-content animate-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Qeyd Əlavə Et</h3>
-              <button className="close-btn" onClick={() => setShowNoteModal(false)}>
-                <X size={20} />
-              </button>
+              <button className="close-btn" onClick={() => setShowNoteModal(false)}><X size={20} /></button>
             </div>
             <div className="modal-body">
               <div className="form-group">
                 <label>Qeyd mətni</label>
-                <textarea
-                  value={noteText}
-                  onChange={e => setNoteText(e.target.value)}
-                  placeholder="Qeydinizi bura yazın..."
-                  rows={4}
-                />
+                <textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Qeydinizi bura yazın..." rows={4} />
               </div>
             </div>
             <div className="modal-footer">

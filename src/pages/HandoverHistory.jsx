@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Clock, Calendar, Download, Eye, FileText, CheckCircle, X, Check, AlertTriangle, Search, RefreshCw } from 'lucide-react'
-import { useAuth } from '../hooks/useAuth'
+import { Clock, Calendar, Eye, FileText, CheckCircle, X, Check, Search, RefreshCw } from 'lucide-react'
 import './HandoverHistory.css'
 
 const BASE_URL = 'https://dutydesk-g3ma.onrender.com'
@@ -13,7 +12,6 @@ const formatDate = (dateStr) => {
 }
 
 function HandoverHistory() {
-  const { user } = useAuth()
   const token = localStorage.getItem('token') || ''
 
   const [activeFilter, setActiveFilter] = useState('all')
@@ -50,37 +48,19 @@ function HandoverHistory() {
 
   useEffect(() => {
     const fetchHistory = async () => {
-      if (!token || !user) return
+      if (!token) return
       setIsLoading(true)
       try {
         const { from, to } = getDateRange()
-        const res = await fetch(`${BASE_URL}/api/admin/shifts?from=${from}&to=${to}&limit=50`, {
+        const params = new URLSearchParams({ from, to, page: '1', limit: '50' })
+        const res = await fetch(`${BASE_URL}/api/handovers?${params.toString()}`, {
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
         })
         if (res.ok) {
           const json = await res.json()
           if (json.success) {
-            const all = json.data?.shifts || json.data?.items || (Array.isArray(json.data) ? json.data : [])
-            const userName = `${user.firstName || ''} ${user.lastName || ''}`.trim()
-            const today = new Date().toISOString().split('T')[0]
-            const mine = all.filter(s =>
-              (s.userId === user.id || s.userName === userName) &&
-              s.date <= today
-            )
-            const mapped = mine.map((s, i) => ({
-              id: s.id || i,
-              date: s.date,
-              time: `${s.startTime || '—'} - ${s.endTime || '—'}`,
-              handoverTime: s.endTime || '—',
-              status: s.status === 'completed' ? 'Tamamlanıb' : (s.status || 'Tamamlanıb'),
-              summary: s.handoverNote || s.notes || 'Məlumat yoxdur',
-              problems: s.incidents || 'Məlumat yoxdur',
-              acceptedBy: s.acceptedBy || '—',
-              incidents: s.incidents || 'Incident yoxdur',
-              systemStatus: s.systemStatus || 'Normal',
-              notes: s.notes || '',
-            }))
-            setHistoryItems(mapped)
+            const items = json.data?.items || json.data?.handovers || (Array.isArray(json.data) ? json.data : [])
+            setHistoryItems(items)
           }
         }
       } catch (err) {
@@ -90,19 +70,17 @@ function HandoverHistory() {
       }
     }
     fetchHistory()
-  }, [token, user, activeFilter])
+  }, [token, activeFilter])
 
   const displayToast = (message) => {
-    setToastMessage(message)
-    setShowToast(true)
+    setToastMessage(message); setShowToast(true)
     setTimeout(() => setShowToast(false), 3000)
   }
 
-  const filteredItems = historyItems.filter(item =>
-    item.date?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.summary?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.acceptedBy?.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredItems = historyItems.filter(item => {
+    const text = `${item.date || ''} ${item.summary || ''} ${item.incidents || ''} ${item.acceptedBy || ''}`.toLowerCase()
+    return text.includes(searchQuery.toLowerCase())
+  })
 
   if (isLoading) {
     return (
@@ -117,10 +95,8 @@ function HandoverHistory() {
 
   return (
     <div className="handover-history">
-      {/* Toast */}
       <div className={`toast-notification ${showToast ? 'show' : ''}`}>
-        <Check size={18} />
-        <span>{toastMessage}</span>
+        <Check size={18} /><span>{toastMessage}</span>
       </div>
 
       {/* Header */}
@@ -138,20 +114,11 @@ function HandoverHistory() {
       <div className="search-filter-row animate-fade-in" style={{ animationDelay: '0.1s' }}>
         <div className="search-box">
           <Search size={18} className="search-icon" />
-          <input
-            type="text"
-            placeholder="Axtar..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-          />
+          <input type="text" placeholder="Axtar..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
         </div>
         <div className="filters">
           {filters.map((filter) => (
-            <button
-              key={filter.id}
-              className={`filter-btn ${activeFilter === filter.id ? 'active' : ''}`}
-              onClick={() => setActiveFilter(filter.id)}
-            >
+            <button key={filter.id} className={`filter-btn ${activeFilter === filter.id ? 'active' : ''}`} onClick={() => setActiveFilter(filter.id)}>
               {filter.label}
             </button>
           ))}
@@ -167,48 +134,38 @@ function HandoverHistory() {
           </div>
         ) : (
           filteredItems.map((item, index) => (
-            <div key={item.id} className="history-card animate-slide-in" style={{ animationDelay: `${index * 0.1}s` }}>
+            <div key={item.id || index} className="history-card animate-slide-in" style={{ animationDelay: `${index * 0.1}s` }}>
               <div className="card-header">
-                <h3 className="card-date">{formatDate(item.date)}</h3>
+                <h3 className="card-date">{formatDate(item.date || item.createdAt)}</h3>
                 <span className="card-status">
                   <CheckCircle size={14} />
-                  {item.status}
+                  {item.status === 'submitted' ? 'Göndərildi' : item.status === 'approved' ? 'Təsdiqləndi' : 'Tamamlanıb'}
                 </span>
               </div>
 
               <div className="card-meta">
-                <span className="meta-item">
-                  <Clock size={14} />
-                  {item.time}
-                </span>
-                <span className="meta-item">
-                  <Calendar size={14} />
-                  Təhvil: {item.handoverTime}
-                </span>
+                {item.startTime && (
+                  <span className="meta-item"><Clock size={14} />{item.startTime} - {item.endTime}</span>
+                )}
               </div>
 
               <div className="card-summary">
                 <span className="summary-label">📋 Xülasə:</span>
-                <p className="summary-text">{item.summary}</p>
+                <p className="summary-text">{item.summary || item.incidents || item.additionalNotes || 'Məlumat yoxdur'}</p>
               </div>
 
-              <div className="card-details">
-                <div className="detail-box problems">
-                  <span className="detail-label">Problemlər / İşlər</span>
-                  <span className="detail-value">{item.problems}</span>
-                </div>
-                {item.acceptedBy !== '—' && (
-                  <div className="detail-box accepted">
-                    <span className="detail-label">Növbəni Qəbul Edən</span>
-                    <span className="detail-value">{item.acceptedBy}</span>
+              {item.incidents && (
+                <div className="card-details">
+                  <div className="detail-box problems">
+                    <span className="detail-label">İncidentlər</span>
+                    <span className="detail-value">{item.incidents}</span>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
               <div className="card-actions">
                 <button className="view-btn" onClick={() => { setSelectedItem(item); setShowDetailModal(true) }}>
-                  <Eye size={16} />
-                  <span>Ətraflı Bax</span>
+                  <Eye size={16} /><span>Ətraflı Bax</span>
                 </button>
               </div>
             </div>
@@ -223,54 +180,33 @@ function HandoverHistory() {
             <div className="modal-header">
               <div>
                 <h3>Təhvil-Təslim Detalları</h3>
-                <span className="modal-subtitle">{formatDate(selectedItem.date)}</span>
+                <span className="modal-subtitle">{formatDate(selectedItem.date || selectedItem.createdAt)}</span>
               </div>
               <button className="close-btn" onClick={() => setShowDetailModal(false)}><X size={20} /></button>
             </div>
             <div className="modal-body">
-              <div className="detail-section">
-                <div className="detail-row">
-                  <div className="detail-col">
-                    <label>Növbə Vaxtı</label>
-                    <span>{selectedItem.time}</span>
-                  </div>
-                  <div className="detail-col">
-                    <label>Təhvil Vaxtı</label>
-                    <span>{selectedItem.handoverTime}</span>
+              {(selectedItem.startTime || selectedItem.endTime) && (
+                <div className="detail-section">
+                  <div className="detail-row">
+                    <div className="detail-col"><label>Növbə Vaxtı</label><span>{selectedItem.startTime} - {selectedItem.endTime}</span></div>
+                    <div className="detail-col"><label>Sistem Statusu</label><span className="status-normal">{selectedItem.systemStatus || 'Normal'}</span></div>
                   </div>
                 </div>
-                <div className="detail-row">
-                  <div className="detail-col">
-                    <label>Qəbul Edən</label>
-                    <span>{selectedItem.acceptedBy}</span>
-                  </div>
-                  <div className="detail-col">
-                    <label>Sistem Statusu</label>
-                    <span className="status-normal">{selectedItem.systemStatus}</span>
-                  </div>
+              )}
+              {selectedItem.incidents && (
+                <div className="detail-section">
+                  <label>İncidentlər</label>
+                  <div className="detail-box-full"><pre>{selectedItem.incidents}</pre></div>
                 </div>
-              </div>
-
-              <div className="detail-section">
-                <label>İncidentlər</label>
-                <div className="detail-box-full">
-                  <pre>{selectedItem.incidents}</pre>
-                </div>
-              </div>
-
+              )}
               <div className="detail-section">
                 <label>Xülasə</label>
-                <div className="detail-box-full">
-                  <p>{selectedItem.summary}</p>
-                </div>
+                <div className="detail-box-full"><p>{selectedItem.summary || selectedItem.additionalNotes || 'Məlumat yoxdur'}</p></div>
               </div>
-
-              {selectedItem.notes && (
+              {selectedItem.nextShiftInfo && (
                 <div className="detail-section">
-                  <label>Əlavə Qeydlər</label>
-                  <div className="detail-box-full">
-                    <p>{selectedItem.notes}</p>
-                  </div>
+                  <label>Növbəti Növbəyə Məlumat</label>
+                  <div className="detail-box-full"><p>{selectedItem.nextShiftInfo}</p></div>
                 </div>
               )}
             </div>
