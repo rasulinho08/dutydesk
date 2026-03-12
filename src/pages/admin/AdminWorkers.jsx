@@ -137,16 +137,25 @@ function AdminWorkers() {
     return searchMatch && teamMatch
   })
 
-  // Stats - workers siyahısından hesablanır (siyahı ilə uyğun olsun)
-  const getTeamWorkerCount = (teamName) => {
-    return workers.filter(w => w.team === teamName).length
+  // Stats - backend teams API-dən gələn memberCount ilə
+  const getTeamMemberCount = (shortName) => {
+    const team = teams.find(t => {
+      const n = t.name.toLowerCase()
+      if (shortName === 'APM') return n.includes('apm')
+      if (shortName === 'NOC') return n.includes('noc')
+      if (shortName === 'SOC') return n.includes('soc')
+      return false
+    })
+    return team?.memberCount || 0
   }
 
+  const totalEmployees = teams.reduce((sum, t) => sum + (t.memberCount || 0), 0)
+
   const stats = [
-    { label: 'Ümumi İşçi', value: workers.length, color: '#155DFC' },
-    { label: 'APM Komandası', value: getTeamWorkerCount('APM'), bg: '#1380AF' },
-    { label: 'NOC Komandası', value: getTeamWorkerCount('NOC'), bg: '#1D984B' },
-    { label: 'SOC Komandası', value: getTeamWorkerCount('SOC'), bg: '#7F38B2' },
+    { label: 'Ümumi İşçi', value: totalEmployees, color: '#155DFC' },
+    { label: 'APM Komandası', value: getTeamMemberCount('APM'), bg: '#1380AF' },
+    { label: 'NOC Komandası', value: getTeamMemberCount('NOC'), bg: '#1D984B' },
+    { label: 'SOC Komandası', value: getTeamMemberCount('SOC'), bg: '#7F38B2' },
   ]
 
 
