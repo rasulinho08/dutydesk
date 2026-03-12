@@ -16,52 +16,128 @@ function AdminHistory() {
   const [isLoading, setIsLoading] = useState(true)
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
+  const [teams, setTeams] = useState([])
 
+  const token = localStorage.getItem('token') || ''
+
+  const [historyRecords, setHistoryRecords] = useState([])
+
+  // Fetch teams (for team UUID lookup)
   useEffect(() => {
-    setTimeout(() => setIsLoading(false), 600)
-  }, [])
-
-  const [historyRecords, setHistoryRecords] = useState([
-    {
-      id: 1,
-      team: 'APM',
-      date: '2026-01-11',
-      time: '08:00 - 20:00',
-      worker: 'Leyla Məmmədova',
-      submittedAt: '2026 M01 11 21:33',
-      systemStatus: 'Bütün sistemlər normal işləyir. CPU istifadəsi 45%, Memory 62%.',
-      incidents: '3 incident hall olundu. 1 kritik (database bağlantı problemi), 2 orta səviyyəli...',
-      completedTasks: 'Server yeniləmələri tamamlandı. Monitoring konfiqurasiyası yeniləndi.',
-      pendingTasks: 'Database backup schedule yenidən planlaşdırılmalıdır.',
-      notes: 'Sabah səhər APM tool update ediləcək.'
-    },
-    {
-      id: 2,
-      team: 'NOC',
-      date: '2026-01-11',
-      time: '08:00 - 20:00',
-      worker: 'Leyla Məmmədova',
-      submittedAt: '2026 M01 11 21:33',
-      systemStatus: 'Bütün sistemlər normal işləyir. CPU istifadəsi 45%, Memory 62%.',
-      incidents: '3 incident hall olundu.',
-      completedTasks: 'Server yeniləmələri tamamlandı.',
-      pendingTasks: 'Database backup schedule yenidən planlaşdırılmalıdır.',
-      notes: ''
-    },
-    {
-      id: 3,
-      team: 'SOC',
-      date: '2026-01-11',
-      time: '08:00 - 20:00',
-      worker: 'Rəşad İbrahimov',
-      submittedAt: '2026 M01 11 21:33',
-      systemStatus: 'Network performansı optimal. Laency <5 ms.',
-      incidents: 'Heç bir incident olmayıb.',
-      completedTasks: 'Firewall rules yeniləndi.',
-      pendingTasks: '',
-      notes: ''
+    const fetchTeams = async () => {
+      if (!token) return
+      try {
+        const res = await fetch('https://dutydesk-g3ma.onrender.com/api/admin/teams', {
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+        })
+        if (res.ok) {
+          const json = await res.json()
+          setTeams(json.data || [])
+        }
+      } catch (err) {
+        console.error('Teams fetch xətası:', err)
+      }
     }
-  ])
+    fetchTeams()
+  }, [token])
+
+  // Helper: get team short name
+  const getTeamShort = (teamName) => {
+    const name = (teamName || '').toLowerCase()
+    if (name.includes('noc')) return 'NOC'
+    if (name.includes('soc')) return 'SOC'
+    if (name.includes('apm')) return 'APM'
+    return teamName?.replace(/ Team$/i, '') || 'N/A'
+  }
+
+  // Helper: get team UUID by short name
+  const getTeamId = (shortName) => {
+    const teamObj = teams.find(t => t.name.toLowerCase().includes(shortName.toLowerCase()))
+    return teamObj?.id || null
+  }
+
+  // Calculate date range based on selectedPeriod
+  const getDateRange = () => {
+    const now = new Date()
+    let from, to
+    to = now.toISOString().split('T')[0]
+
+    switch (selectedPeriod) {
+      case 'Bugün':
+        from = to
+        break
+      case 'Bu həftə': {
+        const weekStart = new Date(now)
+        weekStart.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1))
+        from = weekStart.toISOString().split('T')[0]
+        break
+      }
+      case 'Bu ay':
+      default: {
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+        from = monthStart.toISOString().split('T')[0]
+        break
+      }
+    }
+    return { from, to }
+  }
+
+  // Fetch shift history from API
+  useEffect(() => {
+    const fetchHistory = async () => {
+      if (!token) return
+      try {
+        setIsLoading(true)
+        const { from, to } = getDateRange()
+
+        const params = new URLSearchParams({
+          from,
+          to,
+          page: '1',
+          limit: '50'
+        })
+
+        if (selectedTeam !== 'Bütün Komandalar') {
+          const teamId = getTeamId(selectedTeam)
+          if (teamId) params.set('team', teamId)
+        }
+
+        const res = await fetch(`https://dutydesk-g3ma.onrender.com/api/admin/shifts?${params.toString()}`, {
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+        })
+        if (res.ok) {
+          const json = await res.json()
+          console.log('history response:', json)
+          if (json.success && json.data) {
+            const shifts = json.data.shifts || json.data.items || json.data || []
+            const mapped = (Array.isArray(shifts) ? shifts : []).map((s, idx) => ({
+              id: s.id || idx + 1,
+              team: getTeamShort(s.teamName),
+              date: s.date || '',
+              time: (s.startTime && s.endTime) ? `${s.startTime} - ${s.endTime}` : '—',
+              worker: s.userName || 'N/A',
+              submittedAt: s.handoverSubmittedAt || s.updatedAt || s.date || '',
+              systemStatus: s.systemStatus || s.handoverNote || 'Məlumat yoxdur',
+              incidents: s.incidents || '',
+              completedTasks: s.completedTasks || s.handoverNote || '',
+              pendingTasks: s.pendingTasks || '',
+              notes: s.notes || '',
+              status: s.status || ''
+            }))
+            setHistoryRecords(mapped)
+          }
+        }
+      } catch (err) {
+        console.error('History fetch xətası:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    if (teams.length > 0 || selectedTeam === 'Bütün Komandalar') {
+      fetchHistory()
+    }
+  }, [token, selectedTeam, selectedPeriod, teams])
 
   const filteredRecords = historyRecords.filter(record => {
     const matchesSearch = record.worker.toLowerCase().includes(searchQuery.toLowerCase()) ||

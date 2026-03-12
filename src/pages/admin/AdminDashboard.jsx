@@ -515,9 +515,21 @@ function AdminDashboard() {
     setTimeHeaderDropdown(false)
   }
 
+  // Normalize time string for comparison (handle 24:00 vs 00:00, extra spaces, etc.)
+  const normalizeTime = (t) => (t || '').replace(/\s+/g, '').replace('24:00', '00:00')
+
   const filteredShifts = selectedTimeFilter === 'Bütün vaxtlar'
     ? upcomingShifts
-    : upcomingShifts.filter(shift => shift.time === selectedTimeFilter)
+    : upcomingShifts.filter(shift => {
+        const shiftNorm = normalizeTime(shift.time)
+        const filterNorm = normalizeTime(selectedTimeFilter)
+        // Also match by start hour if exact match fails
+        if (shiftNorm === filterNorm) return true
+        // Extract start hour from shift time and filter
+        const shiftStart = shift.time?.split('-')[0]?.trim()
+        const filterStart = selectedTimeFilter?.split('-')[0]?.trim()
+        return shiftStart === filterStart
+      })
 
   const handleChangeShift = (shiftId) => {
     const shift = upcomingShifts.find(s => s.id === shiftId)
