@@ -64,6 +64,15 @@
   box-shadow: 0 4px 12px rgba(20, 131, 179, 0.3);
 }
 
+.btn-export-stat.excel {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+}
+
+.btn-export-stat.excel:hover {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
+import * as XLSX from 'xlsx'
 import './AdminHistory.css'
 
 function AdminHistory() {
@@ -14,7 +15,7 @@ function AdminHistory() {
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [selectedRecord, setSelectedRecord] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [showToast, setShowToast] = useState(false)
+  const [showToast, setShsToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
   const [teams, setTeams] = useState([])
 
@@ -206,7 +207,32 @@ function AdminHistory() {
   }
 
   const handleExportExcel = () => {
-    displayToast('Excel formatında yüklənir...')
+    const wsData = filteredRecords.map(record => ({
+      'Tarix': record.date,
+      'Komanda': record.team,
+      'İşçi': record.worker,
+      'Növbə': record.time,
+      'Sistem Statusu': record.systemStatus,
+      'İncident-lər': record.incidents || '',
+      'Tamamlanmış Tapşırıqlar': record.completedTasks || '',
+      'Gözləyən Tapşırıqlar': record.pendingTasks || '',
+      'Əlavə Qeydlər': record.notes || '',
+      'Təhvil Tarixi': record.submittedAt
+    }))
+
+    const ws = XLSX.utils.json_to_sheet(wsData)
+
+    // Set column widths
+    ws['!cols'] = [
+      { wch: 12 }, { wch: 10 }, { wch: 20 }, { wch: 16 },
+      { wch: 30 }, { wch: 25 }, { wch: 25 }, { wch: 25 },
+      { wch: 25 }, { wch: 16 }
+    ]
+
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Növbə Tarixçəsi')
+    XLSX.writeFile(wb, `novbe-tarixcesi-${new Date().toLocaleDateString('az-AZ')}.xlsx`)
+    displayToast('Excel yükləndi!')
   }
 
   const handleDownloadPDF = () => {
@@ -311,10 +337,6 @@ function AdminHistory() {
           <p>Təhvil-təslim qeydləri və növbə məlumatları</p>
         </div>
         <div className="header-actions">
-          <button className="btn-export pdf" onClick={handleExportPDF}>
-            <Download size={16} />
-            PDF Export
-          </button>
           <button className="btn-export excel" onClick={handleExportExcel}>
             <Download size={16} />
             Excel Export

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Calendar, Users, CheckCircle, XCircle, TrendingUp, TrendingDown, User, Search, Filter, Download } from "lucide-react";
-import jsPDF from 'jspdf'
-import 'jspdf-autotable'
+import * as XLSX from 'xlsx'
 import "./AdminStatistics.css";
 
 export default function AdminStatistics() {
@@ -170,33 +169,26 @@ export default function AdminStatistics() {
     ? upcomingShifts
     : upcomingShifts.filter(s => getTeamInfo(s.teamName).short === selectedTeam)
 
-  const handleExportPDF = () => {
-    const doc = new jsPDF()
-
-    doc.setFontSize(20)
-    doc.text('Umumi Statistika', 14, 20)
-
-    doc.setFontSize(10)
-    doc.text(`Tarix: ${new Date().toLocaleDateString('az-AZ')}`, 14, 28)
-
-    doc.setFontSize(14)
-    doc.text('Statistik Melumatlar', 14, 40)
-
-    const statsData = stats.map(stat => [
-      stat.title,
-      stat.value.toString()
-    ])
-
-    doc.autoTable({
-      startY: 45,
-      head: [['Gostrici', 'Deyer']],
-      body: statsData,
-      styles: { font: 'helvetica', fontSize: 10 },
-      headStyles: { fillColor: [19, 128, 175], textColor: 255, fontStyle: 'bold' },
-      alternateRowStyles: { fillColor: [245, 245, 245] }
+  const handleExportExcel = () => {
+    const wsData = filteredHistory.map(shift => {
+      const teamInfo = getTeamInfo(shift.teamName)
+      return {
+        'Tarix': shift.date || '',
+        'Komanda': teamInfo.short,
+        'İşçi': shift.userName || 'N/A',
+        'Növbə': `${shift.startTime || ''} - ${shift.endTime || ''}`,
+        'Status': shift.typeLabel || shift.status || '',
+      }
     })
 
-    doc.save(`statistika-${new Date().toLocaleDateString('az-AZ')}.pdf`)
+    const ws = XLSX.utils.json_to_sheet(wsData)
+    ws['!cols'] = [
+      { wch: 12 }, { wch: 10 }, { wch: 20 }, { wch: 16 }, { wch: 14 }
+    ]
+
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Növbə Tarixçəsi')
+    XLSX.writeFile(wb, `statistika-${new Date().toLocaleDateString('az-AZ')}.xlsx`)
   }
 
   const stats = [
@@ -273,9 +265,9 @@ export default function AdminStatistics() {
             <h3>Növbə Tarixçəsi və Hesabatlar</h3>
             <p>Təhvil-təslim qeydləri və növbə məlumatları</p>
           </div>
-          <button className="btn-export-stat" onClick={handleExportPDF}>
+          <button className="btn-export-stat excel" onClick={handleExportExcel}>
             <Download size={16} />
-            PDF Export
+            Excel Export
           </button>
         </div>
 
