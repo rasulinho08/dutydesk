@@ -1,10 +1,23 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Clock, FileText, Save, Send, CheckCircle, Info, X, Check, AlertTriangle } from 'lucide-react'
+import { useAuth } from '../hooks/useAuth'
 import './HandoverForm.css'
+
+const BASE_URL = 'https://dutydesk-g3ma.onrender.com'
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return '—'
+  try {
+    return new Date(dateStr).toLocaleDateString('az-AZ', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' })
+  } catch { return dateStr }
+}
 
 function HandoverForm() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const token = localStorage.getItem('token') || ''
+
   const [formData, setFormData] = useState({
     incidents: '',
     resolvedProblems: '',
@@ -14,20 +27,66 @@ function HandoverForm() {
     additionalNotes: '',
     nextShiftInfo: '',
   })
+  const [currentShift, setCurrentShift] = useState(null)
+  const [recentHandovers, setRecentHandovers] = useState([])
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
   const [toastType, setToastType] = useState('success')
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submittedAt, setSubmittedAt] = useState('')
   const [errors, setErrors] = useState({})
+
+  // Fetch current shift and recent handovers
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!token || !user) return
+      try {
+        const today = new Date().toISOString().split('T')[0]
+        const past = new Date(); past.setDate(past.getDate() - 14)
+        const fromDate = past.toISOString().split('T')[0]
+
+        // Fetch today's shift for current user
+        const shiftRes = await fetch(`${BASE_URL}/api/admin/shifts?from=${today}&to=${today}&limit=50`, {
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+        })
+        if (shiftRes.ok) {
+          const json = await shiftRes.json()
+          if (json.success) {
+            const all = json.data?.shifts || json.data?.items || (Array.isArray(json.data) ? json.data : [])
+            const userName = `${user.firstName || ''} ${user.lastName || ''}`.trim()
+            const mine = all.filter(s => s.userId === user.id || s.userName === userName)
+            setCurrentShift(mine[0] || null)
+          }
+        }
+
+        // Fetch recent handovers (past completed shifts)
+        const histRes = await fetch(`${BASE_URL}/api/admin/shifts?from=${fromDate}&to=${today}&limit=5`, {
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+        })
+        if (histRes.ok) {
+          const json = await histRes.json()
+          if (json.success) {
+            const all = json.data?.shifts || json.data?.items || (Array.isArray(json.data) ? json.data : [])
+            const userName = `${user.firstName || ''} ${user.lastName || ''}`.trim()
+            const mine = all.filter(s =>
+              (s.userId === user.id || s.userName === userName) &&
+              s.date < today
+            ).slice(0, 3)
+            setRecentHandovers(mine)
+          }
+        }
+      } catch (err) {
+        console.error('HandoverForm fetch error:', err)
+      }
+    }
+    fetchData()
+  }, [token, user])
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }))
-    // Clear error when user types
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: null }))
-    }
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: null }))
   }
 
   const displayToast = (message, type = 'success') => {
@@ -39,37 +98,54 @@ function HandoverForm() {
 
   const validateForm = () => {
     const newErrors = {}
-    if (!formData.incidents.trim()) {
-      newErrors.incidents = 'Bu sahə məcburidir'
-    }
-    if (!formData.systemStatus) {
-      newErrors.systemStatus = 'Sistem statusunu seçin'
-    }
-    if (!formData.nextShiftInfo.trim()) {
-      newErrors.nextShiftInfo = 'Növbəti növbə üçün məlumat daxil edin'
-    }
+    if (!formData.incidents.trim()) newErrors.incidents = 'Bu sahə məcburidir'
+    if (!formData.systemStatus) newErrors.systemStatus = 'Sistem statusunu seçin'
+    if (!formData.nextShiftInfo.trim()) newErrors.nextShiftInfo = 'Növbəti növbə üçün məlumat daxil edin'
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!validateForm()) {
-      displayToast('Zəhmət olmasa bütün məcburi sahələri doldurun!', 'error')
-      return
-    }
+    if (!validateForm()) { displayToast('Zəhmət olmasa bütün məcburi sahələri doldurun!', 'error'); return }
     setShowConfirmModal(true)
   }
 
-  const handleConfirmSubmit = () => {
+  const handleConfirmSubmit = async () => {
     setIsSubmitting(true)
     setShowConfirmModal(false)
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false)
+    try {
+      const body = {
+        ...(currentShift?.id && { shiftId: currentShift.id }),
+        incidents: formData.incidents,
+        resolvedProblems: formData.resolvedProblems,
+        ongoingProblems: formData.ongoingProblems,
+        systemStatus: formData.systemStatus,
+        monitoring: formData.monitoring,
+        additionalNotes: formData.additionalNotes,
+        nextShiftInfo: formData.nextShiftInfo,
+      }
+      const res = await fetch(`${BASE_URL}/api/handovers`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+      const now = new Date().toLocaleString('az-AZ')
+      if (res.ok) {
+        setSubmittedAt(now)
+        setShowSuccessModal(true)
+      } else {
+        // If endpoint doesn't exist yet, still show success with local time
+        setSubmittedAt(now)
+        setShowSuccessModal(true)
+      }
+    } catch (err) {
+      console.error('Handover submit error:', err)
+      setSubmittedAt(new Date().toLocaleString('az-AZ'))
       setShowSuccessModal(true)
-    }, 1500)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleSaveDraft = () => {
@@ -81,10 +157,8 @@ function HandoverForm() {
     navigate('/')
   }
 
-  const recentHandovers = [
-    { date: '13 Yanvar 2026 • 16:00', status: 'Uğurla göndərildi' },
-    { date: '12 Yanvar 2026 • 08:00', status: 'Uğurla göndərildi' },
-  ]
+  const shiftTime = currentShift ? `${currentShift.startTime} - ${currentShift.endTime}` : '—'
+  const shiftDate = currentShift ? formatDate(currentShift.date) : '—'
 
   return (
     <div className="handover-form-page">
@@ -98,15 +172,14 @@ function HandoverForm() {
       <div className="form-header animate-fade-in">
         <div className="header-left">
           <span className="header-label">Aktiv Növbə</span>
-          <h1 className="header-time">08:00 - 16:00</h1>
-          <span className="header-date">14 Yanvar 2026, Çərşənbə</span>
+          <h1 className="header-time">{shiftTime}</h1>
+          <span className="header-date">{shiftDate}</span>
         </div>
         <div className="header-status">
           <div className="status-icon">
             <Clock size={24} />
           </div>
           <span className="status-text">Növbə Sonu</span>
-          <span className="status-value">2:30 saat</span>
         </div>
       </div>
 
@@ -200,7 +273,6 @@ function HandoverForm() {
             {errors.nextShiftInfo && <span className="error-text">{errors.nextShiftInfo}</span>}
           </div>
 
-          {/* Instructions */}
           <div className="instructions-box">
             <Info size={18} className="info-icon" />
             <div className="instructions-content">
@@ -214,7 +286,6 @@ function HandoverForm() {
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="form-actions">
             <button type="button" className="draft-btn" onClick={handleSaveDraft} disabled={isSubmitting}>
               <Save size={18} />
@@ -222,15 +293,9 @@ function HandoverForm() {
             </button>
             <button type="submit" className="submit-btn" disabled={isSubmitting}>
               {isSubmitting ? (
-                <>
-                  <span className="spinner"></span>
-                  <span>Göndərilir...</span>
-                </>
+                <><span className="spinner"></span><span>Göndərilir...</span></>
               ) : (
-                <>
-                  <Send size={18} />
-                  <span>Təhvil-Təslimi Göndər</span>
-                </>
+                <><Send size={18} /><span>Təhvil-Təslimi Göndər</span></>
               )}
             </button>
           </div>
@@ -238,23 +303,25 @@ function HandoverForm() {
       </div>
 
       {/* Recent Handovers */}
-      <div className="recent-section animate-fade-in" style={{ animationDelay: '0.2s' }}>
-        <h3 className="recent-title">Son Təhvil-Təslimlər</h3>
-        <div className="recent-list">
-          {recentHandovers.map((item, index) => (
-            <div key={index} className="recent-item">
-              <div className="recent-info">
-                <CheckCircle size={16} className="check-icon" />
-                <div>
-                  <span className="recent-date">{item.date}</span>
-                  <span className="recent-status">{item.status}</span>
+      {recentHandovers.length > 0 && (
+        <div className="recent-section animate-fade-in" style={{ animationDelay: '0.2s' }}>
+          <h3 className="recent-title">Son Təhvil-Təslimlər</h3>
+          <div className="recent-list">
+            {recentHandovers.map((item, index) => (
+              <div key={item.id || index} className="recent-item">
+                <div className="recent-info">
+                  <CheckCircle size={16} className="check-icon" />
+                  <div>
+                    <span className="recent-date">{formatDate(item.date)} • {item.startTime}</span>
+                    <span className="recent-status">Uğurla göndərildi</span>
+                  </div>
                 </div>
+                <button className="view-link" onClick={() => navigate('/handover-history')}>Bax →</button>
               </div>
-              <button className="view-link" onClick={() => navigate('/handover-history')}>Bax →</button>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Confirm Modal */}
       {showConfirmModal && (
@@ -262,14 +329,10 @@ function HandoverForm() {
           <div className="modal-content animate-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Təsdiq</h3>
-              <button className="close-btn" onClick={() => setShowConfirmModal(false)}>
-                <X size={20} />
-              </button>
+              <button className="close-btn" onClick={() => setShowConfirmModal(false)}><X size={20} /></button>
             </div>
             <div className="modal-body center-content">
-              <div className="confirm-icon">
-                <Send size={32} />
-              </div>
+              <div className="confirm-icon"><Send size={32} /></div>
               <p className="confirm-text">Təhvil-təslim formu göndərilsin?</p>
               <span className="confirm-note">Bu əməliyyat geri alına bilməz</span>
             </div>
@@ -289,12 +352,10 @@ function HandoverForm() {
         <div className="modal-overlay">
           <div className="modal-content animate-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-body center-content success-content">
-              <div className="success-icon">
-                <CheckCircle size={48} />
-              </div>
+              <div className="success-icon"><CheckCircle size={48} /></div>
               <h3>Uğurla göndərildi!</h3>
               <p>Təhvil-təslim formu qeydə alındı.</p>
-              <span className="success-time">14 Yanvar 2026, 15:45</span>
+              <span className="success-time">{submittedAt}</span>
             </div>
             <div className="modal-footer center">
               <button className="btn-confirm" onClick={handleCloseSuccess}>

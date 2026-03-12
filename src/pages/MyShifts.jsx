@@ -1,77 +1,87 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Clock, MapPin, Info, X, Check, Calendar, FileText,
-  PlusCircle, ChevronRight, AlertTriangle, RefreshCw,
-  User, Phone, Mail
+  PlusCircle, ChevronRight, AlertTriangle, RefreshCw
 } from 'lucide-react'
+import { useAuth } from '../hooks/useAuth'
 import './MyShifts.css'
+
+const BASE_URL = 'https://dutydesk-g3ma.onrender.com'
+
+const getShiftType = (startTime) => {
+  const h = parseInt((startTime || '').split(':')[0])
+  if (h >= 8 && h < 16) return 'Gündüz növbəsi'
+  if (h >= 16) return 'Axşam növbəsi'
+  return 'Gecə növbəsi'
+}
+const formatDate = (dateStr) => {
+  if (!dateStr) return '—'
+  try {
+    return new Date(dateStr).toLocaleDateString('az-AZ', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' })
+  } catch { return dateStr }
+}
+const getStatusLabel = (status) => {
+  if (!status) return 'Planlaşdırılıb'
+  if (status === 'active') return 'Aktiv'
+  if (status === 'completed') return 'Tamamlandı'
+  if (status === 'cancelled') return 'Ləğv edildi'
+  return 'Planlaşdırılıb'
+}
+const getStatusClass = (status) => {
+  if (status === 'active') return 'active'
+  if (status === 'completed') return 'completed'
+  if (status === 'cancelled') return 'cancelled'
+  return 'planned'
+}
 
 function MyShifts() {
   const navigate = useNavigate()
-  const [isLoading, setIsLoading] = useState(false)
+  const { user } = useAuth()
+  const token = localStorage.getItem('token') || ''
+
+  const [isLoading, setIsLoading] = useState(true)
+  const [shifts, setShifts] = useState([])
+  const [currentShift, setCurrentShift] = useState(null)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showChangeModal, setShowChangeModal] = useState(false)
-  const [showNoteModal, setShowNoteModal] = useState(false)
   const [selectedShift, setSelectedShift] = useState(null)
-  const [noteText, setNoteText] = useState('')
   const [changeReason, setChangeReason] = useState('')
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
   const [toastType, setToastType] = useState('success')
-  const [timeLeft, setTimeLeft] = useState('2:30')
 
+  useEffect(() => {
+    const fetchShifts = async () => {
+      if (!token || !user) return
+      setIsLoading(true)
+      try {
+        const today = new Date().toISOString().split('T')[0]
+        const future = new Date()
+        future.setDate(future.getDate() + 30)
+        const toDate = future.toISOString().split('T')[0]
 
-  const shifts = [
-    {
-      id: 1,
-      date: '14 Yanvar 2026, Çərşənbə',
-      time: '08:00 - 16:00',
-      type: 'Gündüz növbəsi',
-      team: 'APM Komandası',
-      status: 'Aktiv',
-      statusClass: 'active',
-      supervisor: 'Kamran Həsənov',
-      location: 'Mərkəzi Ofis',
-      notes: 'Server monitoring tapşırığı var',
-    },
-    {
-      id: 2,
-      date: '15 Yanvar 2026, Cümə axşamı',
-      time: '08:00 - 16:00',
-      type: 'Gündüz növbəsi',
-      team: 'APM Komandası',
-      status: 'Planlaşdırılıb',
-      statusClass: 'planned',
-      supervisor: 'Kamran Həsənov',
-      location: 'Mərkəzi Ofis',
-      notes: '',
-    },
-    {
-      id: 3,
-      date: '16 Yanvar 2026, Cümə',
-      time: '16:00 - 00:00',
-      type: 'Axşam növbəsi',
-      team: 'APM Komandası',
-      status: 'Planlaşdırılıb',
-      statusClass: 'planned',
-      supervisor: 'Leyla Məmmədova',
-      location: 'Mərkəzi Ofis',
-      notes: 'Backup prosesi nəzarət',
-    },
-    {
-      id: 4,
-      date: '17 Yanvar 2026, Şənbə',
-      time: '00:00 - 08:00',
-      type: 'Gecə növbəsi',
-      team: 'APM Komandası',
-      status: 'Planlaşdırılıb',
-      statusClass: 'planned',
-      supervisor: 'Rəşad İbrahimov',
-      location: 'Mərkəzi Ofis',
-      notes: '',
-    },
-  ]
+        const res = await fetch(`${BASE_URL}/api/admin/shifts?from=${today}&to=${toDate}&limit=50`, {
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+        })
+        if (res.ok) {
+          const json = await res.json()
+          if (json.success) {
+            const all = json.data?.shifts || json.data?.items || (Array.isArray(json.data) ? json.data : [])
+            const userName = `${user.firstName || ''} ${user.lastName || ''}`.trim()
+            const mine = all.filter(s => s.userId === user.id || s.userName === userName)
+            setCurrentShift(mine.find(s => s.date === today) || null)
+            setShifts(mine.filter(s => s.date >= today))
+          }
+        }
+      } catch (err) {
+        console.error('MyShifts fetch error:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchShifts()
+  }, [token, user])
 
   const displayToast = (message, type = 'success') => {
     setToastMessage(message)
@@ -80,40 +90,28 @@ function MyShifts() {
     setTimeout(() => setShowToast(false), 3000)
   }
 
-  const handleViewDetail = (shift) => {
-    setSelectedShift(shift)
-    setShowDetailModal(true)
-  }
-
-  const handleChangeRequest = (shift) => {
-    setSelectedShift(shift)
-    setChangeReason('')
-    setShowChangeModal(true)
-  }
-
   const handleSubmitChange = () => {
-    if (!changeReason.trim()) {
-      displayToast('Səbəb daxil edin!', 'error')
-      return
-    }
+    if (!changeReason.trim()) { displayToast('Səbəb daxil edin!', 'error'); return }
     setShowChangeModal(false)
     displayToast('Dəyişiklik sorğusu göndərildi!')
     setChangeReason('')
   }
 
-  const handleGoToForm = () => {
-    navigate('/handover-form')
+  if (isLoading) {
+    return (
+      <div className="my-shifts loading-state">
+        <div className="loader">
+          <RefreshCw size={32} className="spin" />
+          <span>Növbələr yüklənir...</span>
+        </div>
+      </div>
+    )
   }
 
-  const handleAddNote = () => {
-    if (!noteText.trim()) {
-      displayToast('Qeyd mətni daxil edin!', 'error')
-      return
-    }
-    setShowNoteModal(false)
-    displayToast('Qeyd əlavə edildi!')
-    setNoteText('')
-  }
+  const shiftTime = currentShift ? `${currentShift.startTime} - ${currentShift.endTime}` : '—'
+  const shiftDate = currentShift ? formatDate(currentShift.date) : '—'
+  const teamName = currentShift?.teamName?.replace(/ Team$/i, '') || '—'
+  const shiftTypeName = currentShift ? getShiftType(currentShift.startTime) : '—'
 
   return (
     <div className="my-shifts">
@@ -123,61 +121,19 @@ function MyShifts() {
         <span>{toastMessage}</span>
       </div>
 
-      {/* Header Section */}
-      {/* <div className="page-header animate-fade-in">
-        <div className="header-left">
-          <span className="header-label">İndiki Növbə</span>
-          <h1 className="header-time">08:00 - 16:00</h1>
-          <div className="header-team">
-            <MapPin size={14} />
-            <span>APM Komandası</span>
-          </div>
-        </div>
-        <div className="header-status">
-          <div className="status-icon pulse">
-            <Clock size={24} />
-          </div>
-          <span className="status-text">Status</span>
-          <span className="status-value">Aktiv</span>
-        </div>
-      </div> */}
-
-      {/* Shift Info Banner */}
-      {/* <div className="shift-info-banner animate-fade-in" style={{ animationDelay: '0.1s' }}>
-        <div className="info-dot pulse"></div>
-        <div className="info-content">
-          <span className="info-label">Növbə Məlumatı</span>
-          <span className="info-text">14 Yanvar 2026, Çərşənbə • Gündüz növbəsi • 8 saat</span>
-        </div>
-      </div> */}
-
-      {/* Action Buttons */}
-      {/* <div className="action-row animate-fade-in" style={{ animationDelay: '0.2s' }}>
-        <button className="form-btn" onClick={handleGoToForm}>
-          <FileText size={18} />
-          <span>Təhvil-Təslim Formu</span>
-        </button>
-        <button className="note-btn" onClick={() => setShowNoteModal(true)}>
-          <PlusCircle size={18} />
-          <span>Qeyd Əlavə Et</span>
-        </button>
-      </div> */}
-
       {/* Current Shift Overview */}
       <div className='shift-container'>
         <div className="shift-header animate-fade-in">
           <div className="shift-info">
             <span className="shift-label">İndiki Növbə</span>
-            <h1 className="shift-time">08:00 - 16:00</h1>
-            <span className="shift-date">14 Yanvar 2026, Çərşənbə</span>
+            <h1 className="shift-time">{shiftTime}</h1>
+            <span className="shift-date">{shiftDate}</span>
           </div>
-
           <div className="shift-status">
             <div className="status-circle pulse">
               <Clock size={28} />
             </div>
-            <span className="status-label">Aktiv</span>
-            <span className="status-time">{timeLeft}h qalıb</span>
+            <span className="status-label">{currentShift ? 'Aktiv' : 'Yoxdur'}</span>
           </div>
         </div>
         <div className="shift-stats">
@@ -186,11 +142,11 @@ function MyShifts() {
             <span className="stat-label-dashboard">Növbə müddəti</span>
           </div>
           <div className="stat-card-dashboard light animate-slide-in" style={{ animationDelay: '0.2s' }}>
-            <span className="stat-value">APM</span>
+            <span className="stat-value">{teamName}</span>
             <span className="stat-label-dashboard">Komanda</span>
           </div>
           <div className="stat-card-dashboard white animate-slide-in" style={{ animationDelay: '0.3s' }}>
-            <span className="stat-value">Gündüz</span>
+            <span className="stat-value">{shiftTypeName.split(' ')[0]}</span>
             <span className="stat-label-dashboard">Növbə tipi</span>
           </div>
         </div>
@@ -209,48 +165,49 @@ function MyShifts() {
         </div>
 
         <div className="shifts-list">
-          {shifts.map((shift, index) => (
-            <div
-              key={shift.id}
-              className="shift-card-my animate-slide-in"
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              <div className="shift-card-header">
-                <h3 className="shift-card-date">{shift.date}</h3>
-                <span className={`shift-status ${shift.statusClass}`}>
-                  {shift.status}
-                </span>
-              </div>
-              <div className="shift-card-details">
-                <span className="shift-detail">
-                  <Clock size={14} />
-                  {shift.time}
-                </span>
-                <span className="shift-detail-text">• {shift.type}</span>
-              </div>
-              <div className="shift-card-team">
-                <MapPin size={14} />
-                <span>{shift.team}</span>
-              </div>
-              {shift.notes && (
-                <div className="shift-card-note">
-                  <Info size={14} />
-                  <span>{shift.notes}</span>
-                </div>
-              )}
-              <div className="shift-card-actions">
-                <button className="detail-btn" onClick={() => handleViewDetail(shift)}>
-                  Ətraflı
-                  <ChevronRight size={14} />
-                </button>
-                {shift.status !== 'Aktiv' && (
-                  <button className="change-btn" onClick={() => handleChangeRequest(shift)}>
-                    Dəyişiklik Sorğusu
-                  </button>
-                )}
-              </div>
+          {shifts.length === 0 ? (
+            <div className="empty-state-shifts">
+              <Calendar size={40} />
+              <p>Gələcək növbə tapılmadı</p>
             </div>
-          ))}
+          ) : (
+            shifts.map((shift, index) => (
+              <div
+                key={shift.id || index}
+                className="shift-card-my animate-slide-in"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <div className="shift-card-header">
+                  <h3 className="shift-card-date">{formatDate(shift.date)}</h3>
+                  <span className={`shift-status ${getStatusClass(shift.status)}`}>
+                    {getStatusLabel(shift.status)}
+                  </span>
+                </div>
+                <div className="shift-card-details">
+                  <span className="shift-detail">
+                    <Clock size={14} />
+                    {shift.startTime} - {shift.endTime}
+                  </span>
+                  <span className="shift-detail-text">• {getShiftType(shift.startTime)}</span>
+                </div>
+                <div className="shift-card-team">
+                  <MapPin size={14} />
+                  <span>{shift.teamName?.replace(/ Team$/i, '') || '—'} Komandası</span>
+                </div>
+                <div className="shift-card-actions">
+                  <button className="detail-btn" onClick={() => { setSelectedShift(shift); setShowDetailModal(true) }}>
+                    Ətraflı
+                    <ChevronRight size={14} />
+                  </button>
+                  {shift.status !== 'active' && (
+                    <button className="change-btn" onClick={() => { setSelectedShift(shift); setChangeReason(''); setShowChangeModal(true) }}>
+                      Dəyişiklik Sorğusu
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -260,57 +217,38 @@ function MyShifts() {
           <div className="modal-content animate-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Növbə Detalları</h3>
-              <button className="close-btn" onClick={() => setShowDetailModal(false)}>
-                <X size={20} />
-              </button>
+              <button className="close-btn" onClick={() => setShowDetailModal(false)}><X size={20} /></button>
             </div>
             <div className="modal-body">
               <div className="detail-grid">
                 <div className="detail-item">
                   <label>Tarix</label>
-                  <span>{selectedShift.date}</span>
+                  <span>{formatDate(selectedShift.date)}</span>
                 </div>
                 <div className="detail-item">
                   <label>Vaxt</label>
-                  <span>{selectedShift.time}</span>
+                  <span>{selectedShift.startTime} - {selectedShift.endTime}</span>
                 </div>
                 <div className="detail-item">
                   <label>Növbə Tipi</label>
-                  <span>{selectedShift.type}</span>
+                  <span>{getShiftType(selectedShift.startTime)}</span>
                 </div>
                 <div className="detail-item">
                   <label>Komanda</label>
-                  <span>{selectedShift.team}</span>
-                </div>
-                <div className="detail-item">
-                  <label>Supervizor</label>
-                  <span>{selectedShift.supervisor}</span>
-                </div>
-                <div className="detail-item">
-                  <label>Lokasiya</label>
-                  <span>{selectedShift.location}</span>
+                  <span>{selectedShift.teamName?.replace(/ Team$/i, '') || '—'}</span>
                 </div>
                 <div className="detail-item full-width">
                   <label>Status</label>
-                  <span className={`status-badge ${selectedShift.statusClass}`}>
-                    {selectedShift.status}
+                  <span className={`status-badge ${getStatusClass(selectedShift.status)}`}>
+                    {getStatusLabel(selectedShift.status)}
                   </span>
                 </div>
-                {selectedShift.notes && (
-                  <div className="detail-item full-width">
-                    <label>Qeydlər</label>
-                    <span>{selectedShift.notes}</span>
-                  </div>
-                )}
               </div>
             </div>
             <div className="modal-footer">
               <button className="btn-cancel" onClick={() => setShowDetailModal(false)}>Bağla</button>
-              {selectedShift.status !== 'Aktiv' && (
-                <button className="btn-confirm" onClick={() => {
-                  setShowDetailModal(false)
-                  handleChangeRequest(selectedShift)
-                }}>
+              {selectedShift.status !== 'active' && (
+                <button className="btn-confirm" onClick={() => { setShowDetailModal(false); setChangeReason(''); setShowChangeModal(true) }}>
                   Dəyişiklik Sorğusu
                 </button>
               )}
@@ -325,19 +263,17 @@ function MyShifts() {
           <div className="modal-content animate-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Dəyişiklik Sorğusu</h3>
-              <button className="close-btn" onClick={() => setShowChangeModal(false)}>
-                <X size={20} />
-              </button>
+              <button className="close-btn" onClick={() => setShowChangeModal(false)}><X size={20} /></button>
             </div>
             <div className="modal-body">
               <div className="change-info">
                 <div className="change-shift">
                   <Calendar size={16} />
-                  <span>{selectedShift.date}</span>
+                  <span>{formatDate(selectedShift.date)}</span>
                 </div>
                 <div className="change-shift">
                   <Clock size={16} />
-                  <span>{selectedShift.time}</span>
+                  <span>{selectedShift.startTime} - {selectedShift.endTime}</span>
                 </div>
               </div>
               <div className="form-group">
@@ -359,38 +295,6 @@ function MyShifts() {
               <button className="btn-confirm" onClick={handleSubmitChange}>
                 <Check size={16} />
                 Sorğu Göndər
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Note Modal */}
-      {showNoteModal && (
-        <div className="modal-overlay" onClick={() => setShowNoteModal(false)}>
-          <div className="modal-content animate-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Qeyd Əlavə Et</h3>
-              <button className="close-btn" onClick={() => setShowNoteModal(false)}>
-                <X size={20} />
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label>Qeyd mətni</label>
-                <textarea
-                  value={noteText}
-                  onChange={e => setNoteText(e.target.value)}
-                  placeholder="Qeydinizi bura yazın..."
-                  rows={4}
-                />
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn-cancel" onClick={() => setShowNoteModal(false)}>Ləğv et</button>
-              <button className="btn-confirm" onClick={handleAddNote}>
-                <PlusCircle size={16} />
-                Əlavə et
               </button>
             </div>
           </div>
