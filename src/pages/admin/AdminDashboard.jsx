@@ -1,4 +1,4 @@
-  import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Bell, AlertTriangle, Clock, Users, Calendar,
   ChevronRight, UserPlus, X, Check, Search,
@@ -194,7 +194,7 @@ function AdminDashboard() {
             const mapped = (Array.isArray(shifts) ? shifts : []).map((s, idx) => {
               const teamShort = s.teamName?.toLowerCase().includes('noc') ? 'NOC'
                 : s.teamName?.toLowerCase().includes('soc') ? 'SOC'
-                : s.teamName?.toLowerCase().includes('apm') ? 'APM' : s.teamName?.replace(/ Team$/i, '') || 'APM'
+                  : s.teamName?.toLowerCase().includes('apm') ? 'APM' : s.teamName?.replace(/ Team$/i, '') || 'APM'
 
               return {
                 id: s.id || idx + 1,
@@ -255,7 +255,7 @@ function AdminDashboard() {
               shifts.forEach(s => {
                 const teamName = s.teamName?.toLowerCase().includes('noc') ? 'NOC'
                   : s.teamName?.toLowerCase().includes('soc') ? 'SOC'
-                  : s.teamName?.toLowerCase().includes('apm') ? 'APM' : null
+                    : s.teamName?.toLowerCase().includes('apm') ? 'APM' : null
 
                 if (!teamName) return
 
@@ -521,15 +521,15 @@ function AdminDashboard() {
   const filteredShifts = selectedTimeFilter === 'Bütün vaxtlar'
     ? upcomingShifts
     : upcomingShifts.filter(shift => {
-        const shiftNorm = normalizeTime(shift.time)
-        const filterNorm = normalizeTime(selectedTimeFilter)
-        // Also match by start hour if exact match fails
-        if (shiftNorm === filterNorm) return true
-        // Extract start hour from shift time and filter
-        const shiftStart = shift.time?.split('-')[0]?.trim()
-        const filterStart = selectedTimeFilter?.split('-')[0]?.trim()
-        return shiftStart === filterStart
-      })
+      const shiftNorm = normalizeTime(shift.time)
+      const filterNorm = normalizeTime(selectedTimeFilter)
+      // Also match by start hour if exact match fails
+      if (shiftNorm === filterNorm) return true
+      // Extract start hour from shift time and filter
+      const shiftStart = shift.time?.split('-')[0]?.trim()
+      const filterStart = selectedTimeFilter?.split('-')[0]?.trim()
+      return shiftStart === filterStart
+    })
 
   const handleChangeShift = (shiftId) => {
     const shift = upcomingShifts.find(s => s.id === shiftId)
@@ -725,30 +725,35 @@ function AdminDashboard() {
               </tr>
             </thead>
             <tbody>
-              {filteredShifts.map((shift, idx) => (
-                <tr key={shift.id} style={{ animationDelay: `${idx * 0.05}s` }}>
-                  <td>
-                    <div className="date-cell-new">
-                      {shift.fullDate}
-                    </div>
-                  </td>
-                  <td>
-                    <span className={`team-badge-pill ${shift.team.toLowerCase()}-pill`}>{shift.team}</span>
-                  </td>
-                  <td>
-                    <div className="time-cell-new">
-                      <Clock size={14} />
-                      {shift.time}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="worker-cell-new">
-                      <Users size={14} />
-                      {shift.worker}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              <tbody>
+                {filteredShifts
+                  .slice()
+                  .reverse()
+                  .map((shift, idx) => (
+                    <tr key={shift.id} style={{ animationDelay: `${idx * 0.05}s` }}>
+                      <td>
+                        <div className="date-cell-new">
+                          {shift.fullDate}
+                        </div>
+                      </td>
+                      <td>
+                        <span className={`team-badge-pill ${shift.team.toLowerCase()}-pill`}>{shift.team}</span>
+                      </td>
+                      <td>
+                        <div className="time-cell-new">
+                          <Clock size={14} />
+                          {shift.time}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="worker-cell-new">
+                          <Users size={14} />
+                          {shift.worker}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
             </tbody>
           </table>
         </div>

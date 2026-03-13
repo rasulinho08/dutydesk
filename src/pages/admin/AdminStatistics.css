@@ -306,27 +306,22 @@
 }
 
 .team-filter-wrapper {
-  position: relative;
-  display: flex;
   align-items: center;
   flex: 1;
   max-width: 280px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #6b7280;
 }
 
-.team-filter-wrapper .filter-icon {
-  position: absolute;
-  left: 12px;
-  color: #9ca3af;
-  pointer-events: none;
-  z-index: 1;
-}
 
 .team-filter-wrapper select {
   height: 44px;
-  padding-left: 40px;
-  padding-right: 12px;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
   font-size: 14px;
   cursor: pointer;
   background: white;

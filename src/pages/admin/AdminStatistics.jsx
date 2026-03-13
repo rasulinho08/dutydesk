@@ -281,7 +281,7 @@ export default function AdminStatistics() {
             />
           </div>
           <div className="team-filter-wrapper">
-            <Filter size={18} className="filter-icon" />
+            <Filter size={18} />
             <select value={historyTeamFilter} onChange={e => setHistoryTeamFilter(e.target.value)}>
               <option>Bütün Komandalar</option>
               <option>APM</option>
