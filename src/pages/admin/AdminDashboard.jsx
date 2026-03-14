@@ -464,15 +464,24 @@ function AdminDashboard() {
   })
 
   const dynamicTeams = Object.values(teamMap)
+  const requiredTeams = [
+    { displayName: 'APM', cssClass: 'apm' },
+    { displayName: 'NOC', cssClass: 'noc' },
+    { displayName: 'SOC', cssClass: 'soc' }
+  ]
 
-  // fallback
-  if (dynamicTeams.length === 0) {
-    dynamicTeams.push(
-      { displayName: 'APM', cssClass: 'apm', onShift: 0, exampleWorker: '—', shiftType: 'day' },
-      { displayName: 'NOC', cssClass: 'noc', onShift: 0, exampleWorker: '—', shiftType: 'day' },
-      { displayName: 'SOC', cssClass: 'soc', onShift: 0, exampleWorker: '—', shiftType: 'day' }
-    )
-  }
+  requiredTeams.forEach(requiredTeam => {
+    const alreadyExists = dynamicTeams.some(team => team.displayName === requiredTeam.displayName)
+    if (!alreadyExists) {
+      dynamicTeams.push({
+        displayName: requiredTeam.displayName,
+        cssClass: requiredTeam.cssClass,
+        onShift: 0,
+        exampleWorker: '—',
+        shiftType: 'day'
+      })
+    }
+  })
   const handleConfirmAssign = () => {
     if (selectedWorker && selectedShift) {
       // Update the shift
