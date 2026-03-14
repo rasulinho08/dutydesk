@@ -40,6 +40,16 @@ function AdminSchedule() {
   const [generateMonth, setGenerateMonth] = useState(() => new Date().getMonth() + 1)
   const [isGenerating, setIsGenerating] = useState(false)
 
+  const normalizeTeamName = (teamName) => {
+    const value = (teamName || '').toString().trim()
+    if (!value) return ''
+    const lower = value.toLowerCase()
+    if (lower.includes('apm')) return 'APM'
+    if (lower.includes('noc')) return 'NOC'
+    if (lower.includes('soc')) return 'SOC'
+    return value.replace(/ Team$/i, '').trim().toUpperCase()
+  }
+
   // Fetch teams for generate modal
   useEffect(() => {
     const fetchTeams = async () => {
@@ -123,6 +133,44 @@ function AdminSchedule() {
         const weeks = getWeeksForMonth(currentDate)
         const allShifts = []
         let shiftId = 1
+        const knownTeams = new Set(['APM', 'NOC', 'SOC'])
+        const teamNameById = new Map(
+          teamsList.map(team => [team.id, normalizeTeamName(team.name)])
+        )
+        const workerTeamById = new Map(
+          workers.map(worker => [worker.id, normalizeTeamName(worker.team)])
+        )
+
+        const resolveShiftTeam = (shiftItem, dayData) => {
+          const directCandidates = [
+            shiftItem.teamName,
+            shiftItem.team?.name,
+            shiftItem.team,
+            shiftItem.teamCode,
+            shiftItem.teamShortName,
+            dayData.teamName,
+            dayData.team?.name
+          ]
+
+          for (const candidate of directCandidates) {
+            const normalized = normalizeTeamName(candidate)
+            if (knownTeams.has(normalized)) return normalized
+          }
+
+          const shiftTeamId = shiftItem.teamId || shiftItem.team?.id
+          if (shiftTeamId) {
+            const normalizedFromTeamId = teamNameById.get(shiftTeamId)
+            if (knownTeams.has(normalizedFromTeamId)) return normalizedFromTeamId
+          }
+
+          const shiftUserId = shiftItem.userId || shiftItem.user?.id
+          if (shiftUserId) {
+            const normalizedFromUser = workerTeamById.get(shiftUserId)
+            if (knownTeams.has(normalizedFromUser)) return normalizedFromUser
+          }
+
+          return 'APM'
+        }
 
         for (const week of weeks) {
           try {
@@ -149,7 +197,7 @@ function AdminSchedule() {
                         allShifts.push({
                           id: s.scheduleId || s.id || shiftId++,
                           date: dayNum,
-                          team: s.teamName?.replace(/ Team$/i, '') || 'APM',
+                          team: resolveShiftTeam(s, dayData),
                           time,
                           worker: s.userName || 'N/A'
                         })
@@ -172,7 +220,7 @@ function AdminSchedule() {
       }
     }
     fetchSchedules()
-  }, [token, currentDate])
+  }, [token, currentDate, deletedIds, teamsList, workers])
 
   const filteredWorkers = workers.filter(w => 
     w.team === newShift.team && 
@@ -232,7 +280,7 @@ function AdminSchedule() {
   const getShiftsForDay = (day) => {
     const dayShifts = shifts.filter(s => s.date === day)
     if (selectedTeam === 'Hamısı') return dayShifts
-    return dayShifts.filter(s => s.team === selectedTeam)
+    return dayShifts.filter(s => normalizeTeamName(s.team) === selectedTeam)
   }
 
   const prevMonth = () => {
