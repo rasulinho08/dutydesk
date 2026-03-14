@@ -4,6 +4,7 @@ import {
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import './Dashboard.css'
+import { formatDisplayDate } from '../utils/dateUtils'
 
 const BASE_URL = 'https://dutydesk-g3ma.onrender.com'
 
@@ -19,13 +20,6 @@ const getShiftTypeClass = (startTime) => {
   if (h >= 16) return 'evening'
   return 'night'
 }
-const formatDate = (dateStr) => {
-  if (!dateStr) return '—'
-  try {
-    return new Date(dateStr).toLocaleDateString('az-AZ', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' })
-  } catch { return dateStr }
-}
-
 function Dashboard() {
   const navigate = useNavigate()
   const token = localStorage.getItem('token') || ''
@@ -117,7 +111,7 @@ function Dashboard() {
   const isUpcoming = !currentShift && !!upcomingShifts[0]
 
   const shiftTime = displayShift ? `${displayShift.startTime} - ${displayShift.endTime}` : '—'
-  const shiftDate = displayShift ? formatDate(displayShift.date) : '—'
+  const shiftDate = displayShift ? formatDisplayDate(displayShift.date) : '—'
   const teamName = displayShift?.teamName?.replace(/ Team$/i, '') || '—'
   const shiftTypeName = displayShift ? getShiftType(displayShift.startTime) : '—'
 
@@ -188,7 +182,7 @@ function Dashboard() {
             upcomingShifts.map((shift, i) => (
               <div key={shift.id || i} className="shift-item-dashboard">
                 <div className="shift-item-info">
-                  <span className="shift-item-date">{formatDate(shift.date)}</span>
+                  <span className="shift-item-date">{formatDisplayDate(shift.date)}</span>
                   <span className="shift-item-time">
                     <Clock size={14} />
                     {shift.startTime} - {shift.endTime}

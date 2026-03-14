@@ -22,6 +22,47 @@ export const formatDateAz = (date = new Date()) => {
   return `${day} ${month} ${year}`
 }
 
+const englishMonthNames = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+]
+
+export const formatDisplayDate = (dateStr) => {
+  if (!dateStr) return '—'
+
+  const monthCodeMatch = String(dateStr).match(/^(\d{4})-M(0[1-9]|1[0-2])-(\d{1,2})(.*)?$/)
+  if (monthCodeMatch) {
+    const year = Number(monthCodeMatch[1])
+    const month = Number(monthCodeMatch[2])
+    const day = Number(monthCodeMatch[3])
+    const monthName = englishMonthNames[month - 1]
+    return `${day} ${monthName} ${year}`
+  }
+
+  const parsed = new Date(dateStr)
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toLocaleDateString('en-US', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      weekday: 'long'
+    })
+  }
+
+  const normalized = String(dateStr).replace(/-M(0[1-9]|1[0-2])-/, '-$1-')
+  const normalizedParsed = new Date(normalized)
+  if (!Number.isNaN(normalizedParsed.getTime())) {
+    return normalizedParsed.toLocaleDateString('en-US', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      weekday: 'long'
+    })
+  }
+
+  return String(dateStr).replace(/M(0[1-9]|1[0-2])/g, (_, code) => englishMonthNames[Number(code) - 1] || `M${code}`)
+}
+
 /**
  * Həftənin gününü Azərbaycan dilində qaytarır
  * @param {Date} date - Tarix obyekti

@@ -2,15 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Clock, FileText, Save, Send, CheckCircle, Info, X, Check, AlertTriangle } from 'lucide-react'
 import './HandoverForm.css'
+import { formatDisplayDate } from '../utils/dateUtils'
 
 const BASE_URL = 'https://dutydesk-g3ma.onrender.com'
-
-const formatDate = (dateStr) => {
-  if (!dateStr) return '—'
-  try {
-    return new Date(dateStr).toLocaleDateString('az-AZ', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' })
-  } catch { return dateStr }
-}
 
 function HandoverForm() {
   const navigate = useNavigate()
@@ -129,7 +123,7 @@ function HandoverForm() {
   }
 
   const shiftTime = currentShift ? `${currentShift.startTime} - ${currentShift.endTime}` : '—'
-  const shiftDate = currentShift ? formatDate(currentShift.date) : '—'
+  const shiftDate = currentShift ? formatDisplayDate(currentShift.date) : '—'
 
   return (
     <div className="handover-form-page">
@@ -239,7 +233,7 @@ function HandoverForm() {
                 <div className="recent-info">
                   <CheckCircle size={16} className="check-icon" />
                   <div>
-                    <span className="recent-date">{formatDate(item.date || item.createdAt)}</span>
+                    <span className="recent-date">{formatDisplayDate(item.date || item.createdAt)}</span>
                     <span className="recent-status">Uğurla göndərildi</span>
                   </div>
                 </div>

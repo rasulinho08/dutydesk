@@ -1,15 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Clock, Calendar, Eye, FileText, CheckCircle, X, Check, Search, RefreshCw } from 'lucide-react'
 import './HandoverHistory.css'
+import { formatDisplayDate } from '../utils/dateUtils'
 
 const BASE_URL = 'https://dutydesk-g3ma.onrender.com'
-
-const formatDate = (dateStr) => {
-  if (!dateStr) return '—'
-  try {
-    return new Date(dateStr).toLocaleDateString('az-AZ', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' })
-  } catch { return dateStr }
-}
 
 function HandoverHistory() {
   const token = localStorage.getItem('token') || ''
@@ -136,7 +130,7 @@ function HandoverHistory() {
           filteredItems.map((item, index) => (
             <div key={item.id || index} className="history-card animate-slide-in" style={{ animationDelay: `${index * 0.1}s` }}>
               <div className="card-header">
-                <h3 className="card-date">{formatDate(item.date || item.createdAt)}</h3>
+                <h3 className="card-date">{formatDisplayDate(item.date || item.createdAt)}</h3>
                 <span className="card-status">
                   <CheckCircle size={14} />
                   {item.status === 'submitted' ? 'Göndərildi' : item.status === 'approved' ? 'Təsdiqləndi' : 'Tamamlanıb'}
@@ -180,7 +174,7 @@ function HandoverHistory() {
             <div className="modal-header">
               <div>
                 <h3>Təhvil-Təslim Detalları</h3>
-                <span className="modal-subtitle">{formatDate(selectedItem.date || selectedItem.createdAt)}</span>
+                <span className="modal-subtitle">{formatDisplayDate(selectedItem.date || selectedItem.createdAt)}</span>
               </div>
               <button className="close-btn" onClick={() => setShowDetailModal(false)}><X size={20} /></button>
             </div>
