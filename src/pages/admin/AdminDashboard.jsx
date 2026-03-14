@@ -7,6 +7,8 @@ import {
   Timer, CheckCircle2, XCircle, Phone, Mail
 } from 'lucide-react'
 import './AdminDashboard.css'
+import { BASE_URL } from '../../constants'
+import { formatShiftTimeRange, getShiftHour, getShiftTeamName } from '../../utils/dateUtils'
 
 function AdminDashboard() {
 
@@ -28,6 +30,15 @@ function AdminDashboard() {
   const [selectedTimeFilter, setSelectedTimeFilter] = useState('Bütün vaxtlar')
 
   const token = localStorage.getItem('token') || ''
+
+  const resolveTeamShort = (shift) => {
+    const teamName = getShiftTeamName(shift)
+    const lowerName = teamName.toLowerCase()
+    if (lowerName.includes('noc')) return 'NOC'
+    if (lowerName.includes('soc')) return 'SOC'
+    if (lowerName.includes('apm')) return 'APM'
+    return null
+  }
 
 
 
@@ -68,7 +79,7 @@ function AdminDashboard() {
         setIsLoading(true)
         setError(null)
 
-        const res = await fetch('https://dutydesk-g3ma.onrender.com/api/admin/dashboard', {
+        const res = await fetch(`${BASE_URL}/api/admin/dashboard`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -118,7 +129,7 @@ function AdminDashboard() {
     const fetchTeams = async () => {
       if (!token) return
       try {
-        const res = await fetch('https://dutydesk-g3ma.onrender.com/api/admin/teams', {
+        const res = await fetch(`${BASE_URL}/api/admin/teams`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -142,7 +153,7 @@ function AdminDashboard() {
     const fetchWorkers = async () => {
       if (!token) return
       try {
-        const res = await fetch('https://dutydesk-g3ma.onrender.com/api/admin/users?page=1&limit=50', {
+        const res = await fetch(`${BASE_URL}/api/admin/users?page=1&limit=50`, {
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
         })
         if (res.ok) {
@@ -183,7 +194,7 @@ function AdminDashboard() {
           limit: '20'
         })
 
-        const res = await fetch(`https://dutydesk-g3ma.onrender.com/api/admin/shifts?${params.toString()}`, {
+        const res = await fetch(`${BASE_URL}/api/admin/shifts?${params.toString()}`, {
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
         })
         if (res.ok) {
@@ -192,16 +203,14 @@ function AdminDashboard() {
           if (json.success && json.data) {
             const shifts = json.data.shifts || json.data.items || json.data || []
             const mapped = (Array.isArray(shifts) ? shifts : []).map((s, idx) => {
-              const teamShort = s.teamName?.toLowerCase().includes('noc') ? 'NOC'
-                : s.teamName?.toLowerCase().includes('soc') ? 'SOC'
-                  : s.teamName?.toLowerCase().includes('apm') ? 'APM' : s.teamName?.replace(/ Team$/i, '') || 'APM'
+              const teamShort = resolveTeamShort(s) || getShiftTeamName(s)
 
               return {
                 id: s.id || idx + 1,
                 date: s.date || '',
                 fullDate: s.date || '',
                 team: teamShort,
-                time: (s.startTime && s.endTime) ? `${s.startTime} - ${s.endTime}` : '—',
+                time: formatShiftTimeRange(s.startTime, s.endTime),
                 worker: s.userName || 'Boş',
                 status: s.userName ? 'Planlaşdırılıb' : 'Boş'
               }
@@ -229,7 +238,7 @@ function AdminDashboard() {
           limit: '50'
         })
 
-        const res = await fetch(`https://dutydesk-g3ma.onrender.com/api/admin/shifts?${params.toString()}`, {
+        const res = await fetch(`${BASE_URL}/api/admin/shifts?${params.toString()}`, {
           headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
         })
         if (res.ok) {
@@ -253,14 +262,12 @@ function AdminDashboard() {
               const teamShifts = { APM: {}, NOC: {}, SOC: {} }
 
               shifts.forEach(s => {
-                const teamName = s.teamName?.toLowerCase().includes('noc') ? 'NOC'
-                  : s.teamName?.toLowerCase().includes('soc') ? 'SOC'
-                    : s.teamName?.toLowerCase().includes('apm') ? 'APM' : null
+                const teamName = resolveTeamShort(s)
 
                 if (!teamName) return
 
                 // Map startTime/endTime to time slot
-                const startHour = parseInt(s.startTime?.split(':')[0] || '0')
+                const startHour = getShiftHour(s.startTime)
                 let slot = '08:00 - 16:00'
                 if (startHour >= 0 && startHour < 8) slot = '00:00 - 08:00'
                 else if (startHour >= 16) slot = '16:00 - 24:00'

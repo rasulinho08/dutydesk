@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Clock, FileText, Save, Send, CheckCircle, Info, X, Check, AlertTriangle } from 'lucide-react'
 import './HandoverForm.css'
-import { formatDisplayDate } from '../utils/dateUtils'
-
-const BASE_URL = 'https://dutydesk-g3ma.onrender.com'
+import { formatDisplayDate, formatShiftTimeRange } from '../utils/dateUtils'
+import { BASE_URL } from '../constants'
 
 function HandoverForm() {
   const navigate = useNavigate()
@@ -40,7 +39,8 @@ function HandoverForm() {
         })
         if (curRes.ok) {
           const json = await curRes.json()
-          if (json.success && json.data) setCurrentShift(json.data)
+          const payload = json?.data?.currentShift || json?.data || json?.currentShift || null
+          if (json.success !== false && payload) setCurrentShift(payload)
         }
 
         // Recent handovers
@@ -92,7 +92,9 @@ function HandoverForm() {
     setShowConfirmModal(false)
     try {
       const body = {
-        ...(currentShift?.id && { shiftId: currentShift.id }),
+        ...((currentShift?.id || currentShift?.shiftId || currentShift?.scheduleId) && {
+          shiftId: currentShift.id || currentShift.shiftId || currentShift.scheduleId
+        }),
         incidents: formData.incidents,
         resolvedProblems: formData.resolvedProblems,
         ongoingProblems: formData.ongoingProblems,
@@ -122,8 +124,8 @@ function HandoverForm() {
     navigate('/')
   }
 
-  const shiftTime = currentShift ? `${currentShift.startTime} - ${currentShift.endTime}` : '—'
-  const shiftDate = currentShift ? formatDisplayDate(currentShift.date) : '—'
+  const shiftTime = currentShift ? formatShiftTimeRange(currentShift.startTime, currentShift.endTime) : '—'
+  const shiftDate = currentShift ? formatDisplayDate(currentShift.date || currentShift.startTime) : '—'
 
   return (
     <div className="handover-form-page">

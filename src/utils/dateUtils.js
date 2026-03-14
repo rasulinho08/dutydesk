@@ -132,3 +132,51 @@ export const getRelativeTime = (date) => {
   
   return formatDateAz(date)
 }
+
+export const formatShiftTime = (timeValue) => {
+  if (!timeValue) return '—'
+  const asDate = new Date(timeValue)
+  if (!Number.isNaN(asDate.getTime())) {
+    return asDate.toLocaleTimeString('az-AZ', {
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+  const raw = String(timeValue).trim()
+  if (raw === '24:00') return '00:00'
+  const [hh, mm] = raw.split(':')
+  if (hh !== undefined && mm !== undefined) {
+    return `${String(hh).padStart(2, '0')}:${String(mm).slice(0, 2).padStart(2, '0')}`
+  }
+  return raw
+}
+
+export const getShiftHour = (timeValue) => {
+  if (!timeValue) return NaN
+  const asDate = new Date(timeValue)
+  if (!Number.isNaN(asDate.getTime())) return asDate.getHours()
+  const [hh] = String(timeValue).split(':')
+  return Number(hh)
+}
+
+export const formatShiftTimeRange = (startTime, endTime) => {
+  if (!startTime && !endTime) return '—'
+  return `${formatShiftTime(startTime)} - ${formatShiftTime(endTime)}`
+}
+
+export const getShiftTeamName = (shift) => {
+  if (!shift) return '—'
+  const candidates = [
+    shift.teamName,
+    shift.team?.name,
+    shift.team?.teamName,
+    shift.user?.team?.name,
+    shift.team
+  ]
+  for (const candidate of candidates) {
+    if (candidate && String(candidate).trim()) {
+      return String(candidate).replace(/ Team$/i, '').trim()
+    }
+  }
+  return '—'
+}

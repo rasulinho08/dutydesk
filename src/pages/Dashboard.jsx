@@ -3,17 +3,17 @@ import {
   Clock, Calendar, PlusCircle, X, Check, RefreshCw, AlertTriangle, LogIn, LogOut, CheckCircle2
 } from 'lucide-react'
 import './Dashboard.css'
-import { formatDisplayDate } from '../utils/dateUtils'
+import { formatDisplayDate, formatShiftTime, formatShiftTimeRange, getShiftHour, getShiftTeamName } from '../utils/dateUtils'
 import { BASE_URL } from '../constants'
 
 const getShiftType = (startTime) => {
-  const h = parseInt((startTime || '').split(':')[0])
+  const h = getShiftHour(startTime)
   if (h >= 8 && h < 16) return 'Gündüz'
   if (h >= 16) return 'Axşam'
   return 'Gecə'
 }
 const getShiftTypeClass = (startTime) => {
-  const h = parseInt((startTime || '').split(':')[0])
+  const h = getShiftHour(startTime)
   if (h >= 8 && h < 16) return 'day'
   if (h >= 16) return 'evening'
   return 'night'
@@ -114,11 +114,21 @@ function Dashboard() {
   }, [])
 
   const calcTimeLeft = () => {
+    const remainingTime = Number(currentShift?.remainingTime)
+    if (!Number.isNaN(remainingTime) && remainingTime >= 0) {
+      const hours = Math.floor(remainingTime / 3600)
+      const mins = Math.floor((remainingTime % 3600) / 60)
+      return `${hours}:${mins.toString().padStart(2, '0')}`
+    }
     if (!currentShift?.endTime) return '—'
     const now = new Date()
-    const [h, m] = (currentShift.endTime === '24:00' ? '00:00' : currentShift.endTime).split(':').map(Number)
-    const end = new Date(); end.setHours(h, m, 0, 0)
-    if (end <= now) end.setDate(end.getDate() + 1)
+    const endAsDate = new Date(currentShift.endTime)
+    const end = Number.isNaN(endAsDate.getTime()) ? new Date() : endAsDate
+    if (Number.isNaN(endAsDate.getTime())) {
+      const [h, m] = (currentShift.endTime === '24:00' ? '00:00' : currentShift.endTime).split(':').map(Number)
+      end.setHours(h, m, 0, 0)
+      if (end <= now) end.setDate(end.getDate() + 1)
+    }
     const diff = Math.max(0, end - now)
     const hours = Math.floor(diff / 3600000)
     const mins = Math.floor((diff % 3600000) / 60000)
@@ -203,9 +213,9 @@ function Dashboard() {
   const displayShift = currentShift || upcomingShifts[0] || null
   const isUpcoming = !currentShift && !!upcomingShifts[0]
 
-  const shiftTime = displayShift ? `${displayShift.startTime} - ${displayShift.endTime}` : '—'
-  const shiftDate = displayShift ? formatDisplayDate(displayShift.date) : '—'
-  const teamName = displayShift?.teamName?.replace(/ Team$/i, '') || '—'
+  const shiftTime = displayShift ? formatShiftTimeRange(displayShift.startTime, displayShift.endTime) : '—'
+  const shiftDate = displayShift ? formatDisplayDate(displayShift.date || displayShift.startTime) : '—'
+  const teamName = getShiftTeamName(displayShift)
   const shiftTypeName = displayShift ? getShiftType(displayShift.startTime) : '—'
   const checkInTime = currentShift?.checkin?.checkInTime
   const checkOutTime = currentShift?.checkin?.checkOutTime
@@ -283,14 +293,14 @@ function Dashboard() {
               <LogIn size={16} className={hasCheckedIn ? 'done-icon' : ''} />
               <div className="checkin-item-content">
                 <span className="checkin-label">Check In</span>
-                <span className="checkin-time">{checkInTime ? new Date(checkInTime).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' }) : 'Edilməyib'}</span>
+                <span className="checkin-time">{checkInTime ? formatShiftTime(checkInTime) : 'Edilməyib'}</span>
               </div>
             </div>
             <div className={`checkin-item ${hasCheckedOut ? 'done' : ''}`}>
               <LogOut size={16} className={hasCheckedOut ? 'done-icon' : ''} />
               <div className="checkin-item-content">
                 <span className="checkin-label">Check Out</span>
-                <span className="checkin-time">{checkOutTime ? new Date(checkOutTime).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' }) : 'Edilməyib'}</span>
+                <span className="checkin-time">{checkOutTime ? formatShiftTime(checkOutTime) : 'Edilməyib'}</span>
               </div>
             </div>
           </div>
@@ -348,7 +358,7 @@ function Dashboard() {
                   <span className="shift-item-date">{formatDisplayDate(shift.date)}</span>
                   <span className="shift-item-time">
                     <Clock size={14} />
-                    {shift.startTime} - {shift.endTime}
+                    {formatShiftTimeRange(shift.startTime, shift.endTime)}
                   </span>
                 </div>
                 <span className={`shift-badge ${getShiftTypeClass(shift.startTime)}`}>

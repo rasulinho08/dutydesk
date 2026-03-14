@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Clock, Calendar, Eye, FileText, CheckCircle, X, Check, Search, RefreshCw } from 'lucide-react'
 import './HandoverHistory.css'
-import { formatDisplayDate } from '../utils/dateUtils'
-
-const BASE_URL = 'https://dutydesk-g3ma.onrender.com'
+import { formatDisplayDate, formatShiftTimeRange } from '../utils/dateUtils'
+import { BASE_URL } from '../constants'
 
 function HandoverHistory() {
   const token = localStorage.getItem('token') || ''
@@ -139,7 +138,7 @@ function HandoverHistory() {
 
               <div className="card-meta">
                 {item.startTime && (
-                  <span className="meta-item"><Clock size={14} />{item.startTime} - {item.endTime}</span>
+                  <span className="meta-item"><Clock size={14} />{formatShiftTimeRange(item.startTime, item.endTime)}</span>
                 )}
               </div>
 
@@ -182,7 +181,7 @@ function HandoverHistory() {
               {(selectedItem.startTime || selectedItem.endTime) && (
                 <div className="detail-section">
                   <div className="detail-row">
-                    <div className="detail-col"><label>Növbə Vaxtı</label><span>{selectedItem.startTime} - {selectedItem.endTime}</span></div>
+                    <div className="detail-col"><label>Növbə Vaxtı</label><span>{formatShiftTimeRange(selectedItem.startTime, selectedItem.endTime)}</span></div>
                     <div className="detail-col"><label>Sistem Statusu</label><span className="status-normal">{selectedItem.systemStatus || 'Normal'}</span></div>
                   </div>
                 </div>

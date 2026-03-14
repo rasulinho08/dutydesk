@@ -5,12 +5,11 @@ import {
   ChevronRight, AlertTriangle, RefreshCw
 } from 'lucide-react'
 import './MyShifts.css'
-import { formatDisplayDate } from '../utils/dateUtils'
-
-const BASE_URL = 'https://dutydesk-g3ma.onrender.com'
+import { formatDisplayDate, formatShiftTimeRange, getShiftHour, getShiftTeamName } from '../utils/dateUtils'
+import { BASE_URL } from '../constants'
 
 const getShiftType = (startTime) => {
-  const h = parseInt((startTime || '').split(':')[0])
+  const h = getShiftHour(startTime)
   if (h >= 8 && h < 16) return 'Gündüz növbəsi'
   if (h >= 16) return 'Axşam növbəsi'
   return 'Gecə növbəsi'
@@ -54,7 +53,8 @@ function MyShifts() {
         })
         if (curRes.ok) {
           const json = await curRes.json()
-          if (json.success && json.data) setCurrentShift(json.data)
+          const payload = json?.data?.currentShift || json?.data || json?.currentShift || null
+          if (json.success !== false && payload) setCurrentShift(payload)
         }
 
         // All upcoming shifts
@@ -113,9 +113,9 @@ function MyShifts() {
     )
   }
 
-  const shiftTime = currentShift ? `${currentShift.startTime} - ${currentShift.endTime}` : '—'
-  const shiftDate = currentShift ? formatDisplayDate(currentShift.date) : '—'
-  const teamName = currentShift?.teamName?.replace(/ Team$/i, '') || '—'
+  const shiftTime = currentShift ? formatShiftTimeRange(currentShift.startTime, currentShift.endTime) : '—'
+  const shiftDate = currentShift ? formatDisplayDate(currentShift.date || currentShift.startTime) : '—'
+  const teamName = getShiftTeamName(currentShift)
   const shiftTypeName = currentShift ? getShiftType(currentShift.startTime) : '—'
 
   return (
@@ -175,16 +175,16 @@ function MyShifts() {
             shifts.map((shift, index) => (
               <div key={shift.id || index} className="shift-card-my animate-slide-in" style={{ animationDelay: `${index * 0.1}s` }}>
                 <div className="shift-card-header">
-                  <h3 className="shift-card-date">{formatDisplayDate(shift.date)}</h3>
+                  <h3 className="shift-card-date">{formatDisplayDate(shift.date || shift.startTime)}</h3>
                   <span className={`shift-status ${getStatusClass(shift.status)}`}>{getStatusLabel(shift.status)}</span>
                 </div>
                 <div className="shift-card-details">
-                  <span className="shift-detail"><Clock size={14} />{shift.startTime} - {shift.endTime}</span>
+                  <span className="shift-detail"><Clock size={14} />{formatShiftTimeRange(shift.startTime, shift.endTime)}</span>
                   <span className="shift-detail-text">• {getShiftType(shift.startTime)}</span>
                 </div>
                 <div className="shift-card-team">
                   <MapPin size={14} />
-                  <span>{shift.teamName?.replace(/ Team$/i, '') || '—'} Komandası</span>
+                  <span>{getShiftTeamName(shift)} Komandası</span>
                 </div>
                 <div className="shift-card-actions">
                   <button className="detail-btn" onClick={() => { setSelectedShift(shift); setShowDetailModal(true) }}>
@@ -212,10 +212,10 @@ function MyShifts() {
             </div>
             <div className="modal-body">
               <div className="detail-grid">
-                <div className="detail-item"><label>Tarix</label><span>{formatDisplayDate(selectedShift.date)}</span></div>
-                <div className="detail-item"><label>Vaxt</label><span>{selectedShift.startTime} - {selectedShift.endTime}</span></div>
+                <div className="detail-item"><label>Tarix</label><span>{formatDisplayDate(selectedShift.date || selectedShift.startTime)}</span></div>
+                <div className="detail-item"><label>Vaxt</label><span>{formatShiftTimeRange(selectedShift.startTime, selectedShift.endTime)}</span></div>
                 <div className="detail-item"><label>Növbə Tipi</label><span>{getShiftType(selectedShift.startTime)}</span></div>
-                <div className="detail-item"><label>Komanda</label><span>{selectedShift.teamName?.replace(/ Team$/i, '') || '—'}</span></div>
+                <div className="detail-item"><label>Komanda</label><span>{getShiftTeamName(selectedShift)}</span></div>
                 <div className="detail-item full-width">
                   <label>Status</label>
                   <span className={`status-badge ${getStatusClass(selectedShift.status)}`}>{getStatusLabel(selectedShift.status)}</span>
@@ -242,8 +242,8 @@ function MyShifts() {
             </div>
             <div className="modal-body">
               <div className="change-info">
-                <div className="change-shift"><Calendar size={16} /><span>{formatDisplayDate(selectedShift.date)}</span></div>
-                <div className="change-shift"><Clock size={16} /><span>{selectedShift.startTime} - {selectedShift.endTime}</span></div>
+                <div className="change-shift"><Calendar size={16} /><span>{formatDisplayDate(selectedShift.date || selectedShift.startTime)}</span></div>
+                <div className="change-shift"><Clock size={16} /><span>{formatShiftTimeRange(selectedShift.startTime, selectedShift.endTime)}</span></div>
               </div>
               <div className="form-group">
                 <label>Dəyişiklik Səbəbi *</label>
