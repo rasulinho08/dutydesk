@@ -18,6 +18,14 @@ const getShiftTypeClass = (startTime) => {
   if (h >= 16) return 'evening'
   return 'night'
 }
+const SHIFT_DURATION_SECONDS = 8 * 60 * 60
+const formatDuration = (seconds) => {
+  const safeSeconds = Math.max(0, Number(seconds) || 0)
+  const hours = Math.floor(safeSeconds / 3600)
+  const minutes = Math.floor((safeSeconds % 3600) / 60)
+  const secs = safeSeconds % 60
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+}
 function Dashboard() {
   const token = localStorage.getItem('token') || ''
 
@@ -113,26 +121,29 @@ function Dashboard() {
     return () => clearInterval(timer)
   }, [])
 
-  const calcTimeLeft = () => {
+  const getCountdownSeconds = () => {
+    if (!currentShift) return null
+    const checkinStatus = (currentShift?.checkin?.status || '').toLowerCase()
+    const checkInTime = currentShift?.checkin?.checkInTime
+    const checkOutTime = currentShift?.checkin?.checkOutTime
+    const hasCheckedIn = Boolean(checkInTime) || checkinStatus === 'checked_in' || checkinStatus === 'checked_out'
+    const hasCheckedOut = Boolean(checkOutTime) || checkinStatus === 'checked_out'
+
+    if (!hasCheckedIn) return SHIFT_DURATION_SECONDS
+    if (hasCheckedOut) return 0
+
+    const checkInDate = new Date(checkInTime)
+    if (!Number.isNaN(checkInDate.getTime())) {
+      const elapsedSeconds = Math.floor((currentTime.getTime() - checkInDate.getTime()) / 1000)
+      return Math.max(0, SHIFT_DURATION_SECONDS - Math.max(0, elapsedSeconds))
+    }
+
     const remainingTime = Number(currentShift?.remainingTime)
     if (!Number.isNaN(remainingTime) && remainingTime >= 0) {
-      const hours = Math.floor(remainingTime / 3600)
-      const mins = Math.floor((remainingTime % 3600) / 60)
-      return `${hours}:${mins.toString().padStart(2, '0')}`
+      return Math.max(0, Math.min(SHIFT_DURATION_SECONDS, remainingTime))
     }
-    if (!currentShift?.endTime) return '—'
-    const now = new Date()
-    const endAsDate = new Date(currentShift.endTime)
-    const end = Number.isNaN(endAsDate.getTime()) ? new Date() : endAsDate
-    if (Number.isNaN(endAsDate.getTime())) {
-      const [h, m] = (currentShift.endTime === '24:00' ? '00:00' : currentShift.endTime).split(':').map(Number)
-      end.setHours(h, m, 0, 0)
-      if (end <= now) end.setDate(end.getDate() + 1)
-    }
-    const diff = Math.max(0, end - now)
-    const hours = Math.floor(diff / 3600000)
-    const mins = Math.floor((diff % 3600000) / 60000)
-    return `${hours}:${mins.toString().padStart(2, '0')}`
+
+    return SHIFT_DURATION_SECONDS
   }
 
   const handleCheckIn = async () => {
@@ -224,7 +235,8 @@ function Dashboard() {
   const hasCheckedOut = Boolean(checkOutTime) || checkinStatus === 'checked_out'
   const canCheckIn = Boolean(currentShift) && !hasCheckedIn
   const canCheckOut = Boolean(currentShift) && hasCheckedIn && !hasCheckedOut
-  const formattedNow = currentTime.toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  const countdownSeconds = getCountdownSeconds()
+  const countdownLabel = countdownSeconds === null ? '—' : formatDuration(countdownSeconds)
 
   return (
     <div className="dashboard">
@@ -246,13 +258,13 @@ function Dashboard() {
               <Clock size={28} />
             </div>
             <span className="status-label">{currentShift ? 'Aktiv' : isUpcoming ? 'Planlaşdırılıb' : 'Yoxdur'}</span>
-            <span className="status-time">{currentShift ? `${calcTimeLeft()}h qalıb` : '—'}</span>
+            <span className="status-time">{currentShift ? countdownLabel : '—'}</span>
           </div>
         </div>
         <div className="shift-stats">
           <div className="stat-card-dashboard blue animate-slide-in" style={{ animationDelay: '0.1s' }}>
-            <span className="stat-value">8h</span>
-            <span className="stat-label-dashboard">Növbə müddəti</span>
+            <span className="stat-value">{countdownLabel}</span>
+            <span className="stat-label-dashboard">Qalan vaxt</span>
           </div>
           <div className="stat-card-dashboard light animate-slide-in" style={{ animationDelay: '0.2s' }}>
             <span className="stat-value">{teamName}</span>
@@ -273,7 +285,6 @@ function Dashboard() {
               <span className="checkin-subtitle">Növbə davamiyyəti real vaxtda yenilənir</span>
             </div>
             <div className="checkin-head-right">
-              <span className="current-time-display">{formattedNow}</span>
               {!currentShift && (
                 <span className="shift-state-badge idle">Aktiv növbə yoxdur</span>
               )}
@@ -282,9 +293,6 @@ function Dashboard() {
               )}
               {currentShift && canCheckOut && (
                 <span className="shift-state-badge active">Növbə aktivdir</span>
-              )}
-              {currentShift && hasCheckedOut && (
-                <span className="shift-state-badge done">Növbə tamamlandı</span>
               )}
             </div>
           </div>
