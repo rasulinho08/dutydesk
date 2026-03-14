@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { ChevronLeft, ChevronRight, Calendar, Plus, X, Check, RefreshCw, User, Clock, Search, Zap } from 'lucide-react'
 import './AdminSchedule.css'
 
@@ -13,6 +13,7 @@ function AdminSchedule() {
   const [selectedDay, setSelectedDay] = useState(null)
   const [selectedShift, setSelectedShift] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [scheduleError, setScheduleError] = useState('')
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
   const [workerSearch, setWorkerSearch] = useState('')
@@ -40,7 +41,7 @@ function AdminSchedule() {
   const [generateMonth, setGenerateMonth] = useState(() => new Date().getMonth() + 1)
   const [isGenerating, setIsGenerating] = useState(false)
 
-  const normalizeTeamName = (teamName) => {
+  const normalizeTeamName = useCallback((teamName) => {
     const value = (teamName || '').toString().trim()
     if (!value) return ''
     const lower = value.toLowerCase()
@@ -48,6 +49,12 @@ function AdminSchedule() {
     if (lower.includes('noc')) return 'NOC'
     if (lower.includes('soc')) return 'SOC'
     return value.replace(/ Team$/i, '').trim().toUpperCase()
+  }, [])
+
+  const displayToast = (message) => {
+    setToastMessage(message)
+    setShowToast(true)
+    setTimeout(() => setShowToast(false), 3000)
   }
 
   // Fetch teams for generate modal
@@ -124,103 +131,108 @@ function AdminSchedule() {
     return [...weeks]
   }
 
-  // Fetch schedules from API
-  useEffect(() => {
-    const fetchSchedules = async () => {
-      if (!token) return
-      setIsLoading(true)
-      try {
-        const weeks = getWeeksForMonth(currentDate)
-        const allShifts = []
-        let shiftId = 1
-        const knownTeams = new Set(['APM', 'NOC', 'SOC'])
-        const teamNameById = new Map(
-          teamsList.map(team => [team.id, normalizeTeamName(team.name)])
-        )
-        const workerTeamById = new Map(
-          workers.map(worker => [worker.id, normalizeTeamName(worker.team)])
-        )
+  const fetchSchedules = useCallback(async ({ showLoading = true, showErrorToast = false } = {}) => {
+    if (!token) return
+    if (showLoading) setIsLoading(true)
+    setScheduleError('')
+    try {
+      const weeks = getWeeksForMonth(currentDate)
+      const allShifts = []
+      let shiftId = 1
+      const knownTeams = new Set(['APM', 'NOC', 'SOC'])
+      const teamNameById = new Map(
+        teamsList.map(team => [team.id, normalizeTeamName(team.name)])
+      )
+      const workerTeamById = new Map(
+        workers.map(worker => [worker.id, normalizeTeamName(worker.team)])
+      )
 
-        const resolveShiftTeam = (shiftItem, dayData) => {
-          const directCandidates = [
-            shiftItem.teamName,
-            shiftItem.team?.name,
-            shiftItem.team,
-            shiftItem.teamCode,
-            shiftItem.teamShortName,
-            dayData.teamName,
-            dayData.team?.name
-          ]
+      const resolveShiftTeam = (shiftItem, dayData) => {
+        const directCandidates = [
+          shiftItem.teamName,
+          shiftItem.team?.name,
+          shiftItem.team,
+          shiftItem.teamCode,
+          shiftItem.teamShortName,
+          dayData.teamName,
+          dayData.team?.name
+        ]
 
-          for (const candidate of directCandidates) {
-            const normalized = normalizeTeamName(candidate)
-            if (knownTeams.has(normalized)) return normalized
-          }
-
-          const shiftTeamId = shiftItem.teamId || shiftItem.team?.id
-          if (shiftTeamId) {
-            const normalizedFromTeamId = teamNameById.get(shiftTeamId)
-            if (knownTeams.has(normalizedFromTeamId)) return normalizedFromTeamId
-          }
-
-          const shiftUserId = shiftItem.userId || shiftItem.user?.id
-          if (shiftUserId) {
-            const normalizedFromUser = workerTeamById.get(shiftUserId)
-            if (knownTeams.has(normalizedFromUser)) return normalizedFromUser
-          }
-
-          return 'APM'
+        for (const candidate of directCandidates) {
+          const normalized = normalizeTeamName(candidate)
+          if (knownTeams.has(normalized)) return normalized
         }
 
-        for (const week of weeks) {
-          try {
-            const res = await fetch(`https://dutydesk-g3ma.onrender.com/api/admin/schedules?week=${week}`, {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            })
-            if (res.ok) {
-              const json = await res.json()
-              if (json.success && json.data?.days) {
-                json.data.days.forEach(dayData => {
-                  const dateObj = new Date(dayData.date)
-                  const dayNum = dateObj.getDate()
-                  const dayMonth = dateObj.getMonth()
+        const shiftTeamId = shiftItem.teamId || shiftItem.team?.id
+        if (shiftTeamId) {
+          const normalizedFromTeamId = teamNameById.get(shiftTeamId)
+          if (knownTeams.has(normalizedFromTeamId)) return normalizedFromTeamId
+        }
 
-                  if (dayMonth === currentDate.getMonth()) {
-                    const shiftTypes = { day: '08:00-16:00', evening: '16:00-00:00', night: '00:00-08:00' }
-                    Object.entries(shiftTypes).forEach(([type, time]) => {
-                      const shiftList = dayData.shifts?.[type] || []
-                      shiftList.forEach(s => {
-                        console.log('shift item from API:', s)
-                        allShifts.push({
-                          id: s.scheduleId || s.id || shiftId++,
-                          date: dayNum,
-                          team: resolveShiftTeam(s, dayData),
-                          time,
-                          worker: s.userName || 'N/A'
-                        })
+        const shiftUserId = shiftItem.userId || shiftItem.user?.id
+        if (shiftUserId) {
+          const normalizedFromUser = workerTeamById.get(shiftUserId)
+          if (knownTeams.has(normalizedFromUser)) return normalizedFromUser
+        }
+
+        return 'APM'
+      }
+
+      for (const week of weeks) {
+        try {
+          const res = await fetch(`https://dutydesk-g3ma.onrender.com/api/admin/schedules?week=${week}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          })
+          if (res.ok) {
+            const json = await res.json()
+            if (json.success && json.data?.days) {
+              json.data.days.forEach(dayData => {
+                const dateObj = new Date(dayData.date)
+                const dayNum = dateObj.getDate()
+                const dayMonth = dateObj.getMonth()
+
+                if (dayMonth === currentDate.getMonth()) {
+                  const shiftTypes = { day: '08:00-16:00', evening: '16:00-00:00', night: '00:00-08:00' }
+                  Object.entries(shiftTypes).forEach(([type, time]) => {
+                    const shiftList = dayData.shifts?.[type] || []
+                    shiftList.forEach(s => {
+                      allShifts.push({
+                        id: s.scheduleId || s.id || shiftId++,
+                        date: dayNum,
+                        team: resolveShiftTeam(s, dayData),
+                        time,
+                        worker: s.userName || 'N/A'
                       })
                     })
-                  }
-                })
-              }
+                  })
+                }
+              })
             }
-          } catch (err) {
-            console.error(`Week ${week} fetch xətası:`, err)
           }
+        } catch (err) {
+          console.error(`Week ${week} fetch xətası:`, err)
         }
-
-        setShifts(allShifts.filter(s => !deletedIds.includes(s.id)))
-      } catch (err) {
-        console.error('Schedules fetch xətası:', err)
-      } finally {
-        setIsLoading(false)
       }
+
+      setShifts(allShifts.filter(s => !deletedIds.includes(s.id)))
+    } catch (err) {
+      const message = 'Cədvəl yenilənərkən xəta baş verdi!'
+      console.error('Schedules fetch xətası:', err)
+      setScheduleError(message)
+      if (showErrorToast) {
+        displayToast(message)
+      }
+    } finally {
+      if (showLoading) setIsLoading(false)
     }
+  }, [token, currentDate, deletedIds, teamsList, workers, normalizeTeamName])
+
+  useEffect(() => {
     fetchSchedules()
-  }, [token, currentDate, deletedIds, teamsList, workers])
+  }, [fetchSchedules])
 
   const filteredWorkers = workers.filter(w => 
     w.team === newShift.team && 
@@ -241,12 +253,6 @@ function AdminSchedule() {
   }
 
   const teams = ['APM', 'NOC', 'SOC']
-
-  const displayToast = (message) => {
-    setToastMessage(message)
-    setShowToast(true)
-    setTimeout(() => setShowToast(false), 3000)
-  }
 
   const getDaysInMonth = (date) => {
     const year = date.getFullYear()
@@ -377,12 +383,9 @@ function AdminSchedule() {
       const json = await res.json()
       console.log('generate response:', json)
       if (res.ok && json.success) {
+        await fetchSchedules({ showLoading: true, showErrorToast: true })
         displayToast('1 aylıq növbə cədvəli uğurla yaradıldı!')
         setShowGenerateModal(false)
-        // Refresh calendar if generated month matches current view
-        if (generateYear === currentDate.getFullYear() && generateMonth === currentDate.getMonth() + 1) {
-          setCurrentDate(new Date(currentDate)) // trigger re-fetch
-        }
       } else {
         displayToast(json.error?.message || json.message || 'Xəta baş verdi!')
       }
@@ -422,6 +425,11 @@ function AdminSchedule() {
         <Check size={18} />
         <span>{toastMessage}</span>
       </div>
+      {scheduleError && (
+        <div style={{ marginBottom: 12, color: '#dc2626', fontSize: 13 }}>
+          {scheduleError}
+        </div>
+      )}
 
       {/* Schedule Container with Border */}
       <div className="schedule-container animate-fade-in">
