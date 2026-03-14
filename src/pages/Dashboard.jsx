@@ -1,12 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
-  Clock, Calendar, PlusCircle, X, Check, RefreshCw
+  Clock, Calendar, PlusCircle, X, Check, RefreshCw, AlertTriangle, LogIn, LogOut, CheckCircle2
 } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
 import './Dashboard.css'
 import { formatDisplayDate } from '../utils/dateUtils'
-
-const BASE_URL = 'https://dutydesk-g3ma.onrender.com'
+import { BASE_URL } from '../constants'
 
 const getShiftType = (startTime) => {
   const h = parseInt((startTime || '').split(':')[0])
@@ -21,54 +19,99 @@ const getShiftTypeClass = (startTime) => {
   return 'night'
 }
 function Dashboard() {
-  const navigate = useNavigate()
   const token = localStorage.getItem('token') || ''
 
   const [isLoading, setIsLoading] = useState(true)
+  const [isCheckActionLoading, setIsCheckActionLoading] = useState(false)
   const [showNoteModal, setShowNoteModal] = useState(false)
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
+  const [toastType, setToastType] = useState('success')
   const [noteText, setNoteText] = useState('')
   const [notes, setNotes] = useState([])
   const [currentShift, setCurrentShift] = useState(null)
   const [upcomingShifts, setUpcomingShifts] = useState([])
+  const [currentTime, setCurrentTime] = useState(new Date())
+
+  const displayToast = (message, type = 'success') => {
+    setToastMessage(message)
+    setToastType(type)
+    setShowToast(true)
+    setTimeout(() => setShowToast(false), 3000)
+  }
+
+  const readResponsePayload = useCallback(async (res) => {
+    const raw = await res.text()
+    if (!raw) return null
+    try {
+      return JSON.parse(raw)
+    } catch {
+      return { message: raw }
+    }
+  }, [])
+
+  const fetchCurrentShift = useCallback(async () => {
+    if (!token) return null
+    try {
+      const currentRes = await fetch(`${BASE_URL}/api/shifts/current`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+      })
+      if (!currentRes.ok) {
+        setCurrentShift(null)
+        return null
+      }
+      const json = await readResponsePayload(currentRes)
+      const payload = json?.data?.currentShift || json?.data || json?.currentShift || null
+      if (json?.success === false || !payload) {
+        setCurrentShift(null)
+        return null
+      }
+      setCurrentShift(payload)
+      return payload
+    } catch (err) {
+      console.error('Current shift fetch error:', err)
+      setCurrentShift(null)
+      throw err
+    }
+  }, [token, readResponsePayload])
+
+  const fetchUpcomingShifts = useCallback(async () => {
+    if (!token) return
+    const today = new Date().toISOString().split('T')[0]
+    const future = new Date()
+    future.setDate(future.getDate() + 14)
+    const toDate = future.toISOString().split('T')[0]
+    const upRes = await fetch(`${BASE_URL}/api/shifts?from=${today}&to=${toDate}&page=1&limit=10`, {
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+    })
+    if (!upRes.ok) return
+    const json = await upRes.json()
+    if (json.success) {
+      const items = json.data?.items || json.data?.shifts || (Array.isArray(json.data) ? json.data : [])
+      setUpcomingShifts(items.slice(0, 3))
+    }
+  }, [token])
 
   useEffect(() => {
     const fetchData = async () => {
       if (!token) return
       setIsLoading(true)
       try {
-        // Current shift
-        const currentRes = await fetch(`${BASE_URL}/api/shifts/current`, {
-          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-        })
-        if (currentRes.ok) {
-          const json = await currentRes.json()
-          if (json.success && json.data) setCurrentShift(json.data)
-        }
-
-        // Upcoming shifts
-        const today = new Date().toISOString().split('T')[0]
-        const future = new Date(); future.setDate(future.getDate() + 14)
-        const toDate = future.toISOString().split('T')[0]
-        const upRes = await fetch(`${BASE_URL}/api/shifts?from=${today}&to=${toDate}&page=1&limit=10`, {
-          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-        })
-        if (upRes.ok) {
-          const json = await upRes.json()
-          if (json.success) {
-            const items = json.data?.items || json.data?.shifts || (Array.isArray(json.data) ? json.data : [])
-            setUpcomingShifts(items.slice(0, 3))
-          }
-        }
+        await Promise.all([fetchCurrentShift(), fetchUpcomingShifts()])
       } catch (err) {
         console.error('Dashboard fetch error:', err)
+        displayToast('Məlumatlar yüklənmədi', 'error')
       } finally {
         setIsLoading(false)
       }
     }
     fetchData()
-  }, [token])
+  }, [token, fetchCurrentShift, fetchUpcomingShifts])
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000)
+    return () => clearInterval(timer)
+  }, [])
 
   const calcTimeLeft = () => {
     if (!currentShift?.endTime) return '—'
@@ -82,10 +125,60 @@ function Dashboard() {
     return `${hours}:${mins.toString().padStart(2, '0')}`
   }
 
-  const displayToast = (message) => {
-    setToastMessage(message)
-    setShowToast(true)
-    setTimeout(() => setShowToast(false), 3000)
+  const handleCheckIn = async () => {
+    const shiftId = currentShift?.id || currentShift?.shiftId || currentShift?.scheduleId
+    if (!currentShift) {
+      displayToast('Aktiv növbə tapılmadı', 'error')
+      return
+    }
+    setIsCheckActionLoading(true)
+    try {
+      const body = shiftId ? { shiftId, note: '' } : { note: '' }
+      const res = await fetch(`${BASE_URL}/api/shifts/check-in`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+      const json = await readResponsePayload(res)
+      if (!res.ok || json?.success === false) {
+        throw new Error(json?.error?.message || json?.message || 'Check-in alınmadı')
+      }
+      await Promise.all([fetchCurrentShift(), fetchUpcomingShifts()])
+      displayToast('Check-in uğurla tamamlandı')
+    } catch (err) {
+      console.error('Check-in error:', err)
+      displayToast(err.message || 'Check-in zamanı xəta baş verdi', 'error')
+    } finally {
+      setIsCheckActionLoading(false)
+    }
+  }
+
+  const handleCheckOut = async () => {
+    const shiftId = currentShift?.id || currentShift?.shiftId || currentShift?.scheduleId
+    if (!currentShift) {
+      displayToast('Aktiv növbə tapılmadı', 'error')
+      return
+    }
+    setIsCheckActionLoading(true)
+    try {
+      const body = shiftId ? { shiftId, note: '' } : { note: '' }
+      const res = await fetch(`${BASE_URL}/api/shifts/check-out`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+      const json = await readResponsePayload(res)
+      if (!res.ok || json?.success === false) {
+        throw new Error(json?.error?.message || json?.message || 'Check-out alınmadı')
+      }
+      await Promise.all([fetchCurrentShift(), fetchUpcomingShifts()])
+      displayToast('Check-out uğurla tamamlandı')
+    } catch (err) {
+      console.error('Check-out error:', err)
+      displayToast(err.message || 'Check-out zamanı xəta baş verdi', 'error')
+    } finally {
+      setIsCheckActionLoading(false)
+    }
   }
 
   const handleAddNote = () => {
@@ -114,11 +207,19 @@ function Dashboard() {
   const shiftDate = displayShift ? formatDisplayDate(displayShift.date) : '—'
   const teamName = displayShift?.teamName?.replace(/ Team$/i, '') || '—'
   const shiftTypeName = displayShift ? getShiftType(displayShift.startTime) : '—'
+  const checkInTime = currentShift?.checkin?.checkInTime
+  const checkOutTime = currentShift?.checkin?.checkOutTime
+  const checkinStatus = (currentShift?.checkin?.status || '').toLowerCase()
+  const hasCheckedIn = Boolean(checkInTime) || checkinStatus === 'checked_in' || checkinStatus === 'checked_out'
+  const hasCheckedOut = Boolean(checkOutTime) || checkinStatus === 'checked_out'
+  const canCheckIn = Boolean(currentShift) && !hasCheckedIn
+  const canCheckOut = Boolean(currentShift) && hasCheckedIn && !hasCheckedOut
+  const formattedNow = currentTime.toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 
   return (
     <div className="dashboard">
-      <div className={`toast-notification ${showToast ? 'show' : ''}`}>
-        <Check size={18} />
+      <div className={`toast-notification ${showToast ? 'show' : ''} ${toastType}`}>
+        {toastType === 'success' ? <Check size={18} /> : <AlertTriangle size={18} />}
         <span>{toastMessage}</span>
       </div>
 
@@ -151,6 +252,68 @@ function Dashboard() {
             <span className="stat-value">{shiftTypeName}</span>
             <span className="stat-label-dashboard">Növbə tipi</span>
           </div>
+        </div>
+      </div>
+
+      <div className="checkin-panel animate-slide-in" style={{ animationDelay: '0.15s' }}>
+        <div className="checkin-status">
+          <div className="checkin-header-row">
+            <div className="checkin-info">
+              <span className="checkin-title">Check-in / Check-out</span>
+              <span className="checkin-subtitle">Növbə davamiyyəti real vaxtda yenilənir</span>
+            </div>
+            <div className="checkin-head-right">
+              <span className="current-time-display">{formattedNow}</span>
+              {!currentShift && (
+                <span className="shift-state-badge idle">Aktiv növbə yoxdur</span>
+              )}
+              {currentShift && canCheckIn && (
+                <span className="shift-state-badge waiting">Check-in gözlənilir</span>
+              )}
+              {currentShift && canCheckOut && (
+                <span className="shift-state-badge active">Növbə aktivdir</span>
+              )}
+              {currentShift && hasCheckedOut && (
+                <span className="shift-state-badge done">Növbə tamamlandı</span>
+              )}
+            </div>
+          </div>
+          <div className="checkin-details">
+            <div className={`checkin-item ${hasCheckedIn ? 'done' : ''}`}>
+              <LogIn size={16} className={hasCheckedIn ? 'done-icon' : ''} />
+              <div className="checkin-item-content">
+                <span className="checkin-label">Check In</span>
+                <span className="checkin-time">{checkInTime ? new Date(checkInTime).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' }) : 'Edilməyib'}</span>
+              </div>
+            </div>
+            <div className={`checkin-item ${hasCheckedOut ? 'done' : ''}`}>
+              <LogOut size={16} className={hasCheckedOut ? 'done-icon' : ''} />
+              <div className="checkin-item-content">
+                <span className="checkin-label">Check Out</span>
+                <span className="checkin-time">{checkOutTime ? new Date(checkOutTime).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' }) : 'Edilməyib'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="checkin-actions">
+          {canCheckIn && (
+            <button className="checkin-btn check-in" onClick={handleCheckIn} disabled={isCheckActionLoading}>
+              {isCheckActionLoading ? <RefreshCw size={16} className="spin" /> : <LogIn size={16} />}
+              {isCheckActionLoading ? 'Yoxlanılır...' : 'Check In et'}
+            </button>
+          )}
+          {canCheckOut && (
+            <button className="checkin-btn check-out" onClick={handleCheckOut} disabled={isCheckActionLoading}>
+              {isCheckActionLoading ? <RefreshCw size={16} className="spin" /> : <LogOut size={16} />}
+              {isCheckActionLoading ? 'Yoxlanılır...' : 'Check Out et'}
+            </button>
+          )}
+          {currentShift && hasCheckedOut && (
+            <div className="checkin-complete">
+              <CheckCircle2 size={18} />
+              <span>Növbə tamamlandı</span>
+            </div>
+          )}
         </div>
       </div>
 
